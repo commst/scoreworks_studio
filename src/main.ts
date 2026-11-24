@@ -9,7 +9,7 @@ import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './pl
 // @ts-ignore
 import { INSTRUMENTS } from '../shared/scoreworks/melody-engine.js';
 import type { Score, Pitch } from './swc/model.ts';
-import { transpose, setLetter, toRest, setDur, toggleDot, insertAt, moveTo, diaOf, keyAt, timeAt, undo as undoEd, redo as redoEd, step as stepSel, refind, evOf, type Sel, type Edit } from './edit/ops.ts';
+import { transpose, setLetter, toRest, setDur, toggleDot, insertAt, moveTo, diaOf, keyAt, timeAt, addToChord, addLetter, insertMeasures, deleteMeasures, isWhole, undo as undoEd, redo as redoEd, step as stepSel, refind, evOf, type Sel, type Edit } from './edit/ops.ts';
 import type { Frac } from './swc/frac.ts';
 import { typeOf } from './io/musicxml-out.ts';
 import { beatOf } from './swc/notate.ts';
@@ -236,7 +236,9 @@ function editUi() {
   $('selChip').classList.toggle('on', !!e); $('selChip').classList.toggle('arm', !e && !!armed);
   $('selInfo').textContent = !e && armed ? `악보를 누르는 곳에 ${armName()}를 넣습니다 · Esc 그만` : !e ? '음을 누르면 고칠 수 있습니다 · 음표를 끌어다 놓으면 새 음' :
     `${p!.name} · ${state.score!.measures[s!.mi].number}마디 · ${e.rest ? '쉼표' : p!.kind === 'perc' ? '타악' : (s!.ni != null ? [e.notes![s!.ni]] : e.notes!).map(pName).join('·')} · ${e.measureRest ? '온마디' : durName(e)}`;
-  document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed]').forEach(b => b.disabled = !e);
+  document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed], #editbar [data-ms]').forEach(b => b.disabled = !e);
+  document.querySelectorAll<HTMLButtonElement>('#voiceSeg [data-voice]').forEach(b => b.classList.toggle('cur', +b.dataset.voice! === inVoice));
+  $('chordBtn').classList.toggle('cur', chordMode);
   document.querySelectorAll<HTMLButtonElement>('#palette [data-pal]').forEach(b => b.classList.toggle('cur', !e && b.dataset.pal === armed));
   $('dotBtn').classList.toggle('cur', !e && armDot);
   scoreEl.classList.toggle('arming', !e && !!armed);
@@ -246,7 +248,14 @@ let drawT = 0;
 function afterEdit(ed: Edit, keep?: { staff: number; voice: number; t: Frac }) {
   if (!ed.length) return;
   state.undo.push(ed); if (state.undo.length > 200) state.undo.shift(); state.redo = [];
+  if (isWhole(ed)) { wholeEdited(); return; }
   edited(ed.map(c => c.mi), keep);
+}
+// 마디 수가 바뀐 편집: 전체 다시 그리기, 곡 정보 갱신
+function wholeEdited() {
+  state.rendered = null; changed(); editUi(); autosave(); infoUi();
+  $('tbSongInfo').textContent = `${state.score!.parts.length}파트 · ${state.score!.measures.length}마디`;
+  clearTimeout(drawT); dirtyMs = new Set(); draw();
 }
 let dirtyMs = new Set<number>();
 function edited(mis: number[], keep?: { staff: number; voice: number; t: Frac }) {
@@ -264,7 +273,9 @@ function doEdit(f: (sc: Score, s: Sel) => Edit) {
 function undoRedo(u: boolean) {
   const from = u ? state.undo : state.redo, to = u ? state.redo : state.undo, ed = from.pop(); if (!ed) return;
   (u ? undoEd : redoEd)(state.score!, ed); to.push(ed);
-  state.sel = null; edited(ed.map(c => c.mi));
+  state.sel = null;
+  if (isWhole(ed)) { wholeEdited(); return; }
+  edited(ed.map(c => c.mi));
 }
 $('undo').onclick = () => undoRedo(true); $('redo').onclick = () => undoRedo(false);
 const parseDur = (v: string): Frac => { const [a, b] = v.split('/').map(Number); return [a, b]; };
@@ -289,7 +300,7 @@ function elAt(ev: { target: EventTarget | null; clientX: number; clientY: number
 // 음 누르기: Verovio가 옮긴 id(e파트-마디-사건-음)
 scoreEl.addEventListener('click', ev => {
   if (suppressClick) { suppressClick = false; return; }
-  if (armed && !state.sel) { const h = hitAt(ev.clientX, ev.clientY, gridFor(armDur())); if (h) dropNew(h); return; }
+  if (armed && !state.sel) { const h = hitAt(ev.clientX, ev.clientY, gridFor(armDur())); if (h) dropNew(h, armed, armDot, ev.shiftKey); return; }
   const g = elAt(ev, 'g.note, g.rest, g.mRest, g.multiRest');
   const id = g && g.getAttribute('data-id'), m = id && /^e(\d+)-(\d+)-(\d+)-(\d+)$/.exec(id);
   if (!m) { if (state.sel) { state.sel = null; showSel(); editUi(); } return; }
@@ -313,7 +324,7 @@ document.addEventListener('keydown', ev => {
   else if (k === 'Escape') { state.sel = null; armed = null; armDot = false; ghostHide(); showSel(); editUi(); return; }
   else if (k === 'Delete' || k === 'Backspace') f = toRest;
   else if (k === '.') f = toggleDot;
-  else if (!ctrl && /^[a-gA-G]$/.test(k)) { const st = k.toUpperCase() as Pitch['step']; f = (sc, s) => setLetter(sc, s, st); }
+  else if (!ctrl && /^[a-gA-G]$/.test(k)) { const st = k.toUpperCase() as Pitch['step']; f = ev.shiftKey ? (sc, s) => addLetter(sc, s, st) : (sc, s) => setLetter(sc, s, st); }
   else if (!ctrl && DUR_KEY[k]) { const d = DUR_KEY[k]; f = (sc, s) => setDur(sc, s, d); }
   if (f) { ev.preventDefault(); doEdit(f); }
 });
@@ -440,7 +451,21 @@ document.addEventListener('keydown', ev => { if ((ev.ctrlKey || ev.metaKey) && (
 
 // ── 음표 끌어 넣기 · 음 끌어 옮기기 ──
 // 음표판(palette): 누르면 고른 음의 길이를 바꾸고(고른 음이 없으면 '넣기' 상태 — 악보를 누르는 곳에 넣음), 끌어다 악보에 놓으면 그 자리에 새 음
-let armed: string | null = null, armDot = false, suppressClick = false;
+let armed: string | null = null, armDot = false, suppressClick = false, inVoice = 1, chordMode = false;
+// 성부·화음
+document.querySelectorAll<HTMLButtonElement>('#voiceSeg [data-voice]').forEach(b => b.onclick = () => { inVoice = +b.dataset.voice!; editUi(); });
+$('chordBtn').onclick = () => { chordMode = !chordMode; editUi(); };
+// 마디 넣기·지우기(고른 음이 있는 마디 기준)
+document.querySelectorAll<HTMLButtonElement>('#editbar [data-ms]').forEach(b => b.onclick = () => {
+  const s = state.sel; if (!s || !state.score) return;
+  const k = b.dataset.ms;
+  if (k === 'del' && state.score.measures.length <= 1) return;
+  const ed = k === 'before' ? insertMeasures(state.score, s.mi) : k === 'after' ? insertMeasures(state.score, s.mi + 1) : deleteMeasures(state.score, s.mi);
+  if (!ed.length) return;
+  // 고른 자리: 넣은 빈 마디의 첫 쉼표, 지웠으면 선택 풀기
+  state.sel = k === 'del' ? null : { pi: s.pi, mi: k === 'before' ? s.mi : s.mi + 1, ei: 0 };
+  afterEdit(ed);
+});
 const PAL_NAME: Record<string, string> = { '1/1': '온음표', '1/2': '2분음표', '1/4': '4분음표', '1/8': '8분음표', '1/16': '16분음표', '1/32': '32분음표', rest: '4분쉼표' };
 const armName = () => (armDot && armed !== 'rest' ? '점' : '') + PAL_NAME[armed || '1/4'];
 function palDur(v: string, dot: boolean): Frac { const d: Frac = v === 'rest' ? [1, 4] : parseDur(v); return dot ? mul(d, [3, 2]) : d; }
@@ -516,15 +541,17 @@ function ghostShow(h: Hit | null, px: number, py: number, rest = false, chip = '
   head.classList.toggle('rest', rest);
   head.style.left = h.x + 'px'; head.style.top = (rest ? h.y - h.sp * 0 : h.y) + 'px';
   head.style.width = (rest ? h.sp * 0.9 : h.sp * 1.35) + 'px'; head.style.height = (rest ? h.sp * 1.8 : h.sp * 0.95) + 'px';
-  lab.style.left = h.x + 'px'; lab.style.top = h.y + 'px'; lab.textContent = rest ? h.label.replace(/^[^·]*·\s*/, '쉼표 · ') : h.label;
+  lab.style.left = h.x + 'px'; lab.style.top = h.y + 'px';
+  lab.textContent = (rest ? h.label.replace(/^[^·]*·\s*/, '쉼표 · ') : (chordMode && !drag ? '화음 + ' : '') + h.label) + (inVoice > 1 && !drag ? ' · 성부 2' : '');
 }
 function ghostHide() { ghost.hidden = true; }
 
-function dropNew(h: Hit, v = armed || '1/4', dot = armDot) {
+function dropNew(h: Hit, v = armed || '1/4', dot = armDot, shift = false) {
   if (!state.score) return;
   const rest = v === 'rest', d = palDur(v, dot && !rest);
   state.sel = { pi: h.pi, mi: h.mi, ei: 0 };
-  afterEdit(insertAt(state.score, h.pi, h.mi, h.staff, h.t, d, rest ? null : h.dia), { staff: h.staff, voice: 1, t: h.t });
+  const ed = (chordMode || shift) && !rest ? addToChord(state.score, h.pi, h.mi, h.staff, h.t, d, h.dia, inVoice) : insertAt(state.score, h.pi, h.mi, h.staff, h.t, d, rest ? null : h.dia, inVoice);
+  afterEdit(ed, { staff: h.staff, voice: inVoice, t: h.t });
   if (armed) { state.sel = null; showSel(); editUi(); }   // 넣기 상태에서는 계속 넣을 수 있게
 }
 
@@ -542,7 +569,7 @@ document.querySelectorAll<HTMLButtonElement>('#palette [data-pal]').forEach(b =>
     if (!down) return;
     const was = dragging; down = null; dragging = false; document.body.style.userSelect = ''; ghostHide();
     if (was) {
-      if (drop) { const dot = armDot && !state.sel; const h = hitAt(ev.clientX, ev.clientY, gridFor(palDur(v, dot && v !== 'rest'))); if (h) dropNew(h, v, dot); }
+      if (drop) { const dot = armDot && !state.sel; const h = hitAt(ev.clientX, ev.clientY, gridFor(palDur(v, dot && v !== 'rest'))); if (h) dropNew(h, v, dot, ev.shiftKey); }
       b.dataset.dragged = '1';
     }
   };

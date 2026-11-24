@@ -6,7 +6,7 @@ import { notateVoice, beatOf } from '../swc/notate.ts';
 import { midiOf, spell, LET } from '../swc/pitch.ts';
 
 export interface Sel { pi: number; mi: number; ei: number; ni?: number }
-export interface Change { pi: number; mi: number; before: PartMeasure; after: PartMeasure }
+export interface Change { pi: number; mi: number; before: PartMeasure; after: PartMeasure; whole?: { before: string; after: string } }   // whole: 마디 넣기·지우기처럼 마디 수가 바뀌는 편집(악보 전체 마디 전·후, mi = -1)
 export type Edit = Change[];
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -38,8 +38,10 @@ class Tx {
 }
 
 // 같은 마디가 여러 번 기록될 수 있어 되돌리기는 거꾸로(맨 처음 '전'이 남게), 다시는 차례대로(맨 끝 '후'가 남게)
-export function undo(score: Score, ed: Edit) { for (let i = ed.length - 1; i >= 0; i--) score.parts[ed[i].pi].measures[ed[i].mi] = clone(ed[i].before); }
-export function redo(score: Score, ed: Edit) { for (const c of ed) score.parts[c.pi].measures[c.mi] = clone(c.after); }
+function setWhole(score: Score, js: string) { const o = JSON.parse(js); score.measures = o.measures; score.parts.forEach((p, i) => { p.measures = o.parts[i]; }); }
+export function undo(score: Score, ed: Edit) { for (let i = ed.length - 1; i >= 0; i--) { const c = ed[i]; if (c.whole) setWhole(score, c.whole.before); else score.parts[c.pi].measures[c.mi] = clone(c.before); } }
+export function redo(score: Score, ed: Edit) { for (const c of ed) { if (c.whole) setWhole(score, c.whole.after); else score.parts[c.pi].measures[c.mi] = clone(c.after); } }
+export const isWhole = (ed: Edit) => ed.some(c => !!c.whole);
 
 export const evOf = (score: Score, s: Sel): Ev | undefined => score.parts[s.pi]?.measures[s.mi]?.events[s.ei];
 
@@ -239,11 +241,83 @@ function insertCore(tx: Tx, pi: number, mi: number, staff: number, voice: number
 }
 
 // 새 음 넣기(악보에 끌어 놓기·눌러 넣기). dia = null이면 쉼표. 타악 파트는 높이 없이
-export function insertAt(score: Score, pi: number, mi: number, staff: number, t: Frac, dur: Frac, dia: number | null): Edit {
+export function insertAt(score: Score, pi: number, mi: number, staff: number, t: Frac, dur: Frac, dia: number | null, voice = 1): Edit {
   const tx = new Tx(score), part = score.parts[pi];
   const notes = dia == null ? null : part.kind === 'perc' ? [{ step: 'C', alter: 0, oct: 5 } as Pitch] : [fromDia(dia, keyAt(score, mi))];
-  insertCore(tx, pi, mi, staff, 1, t, dur, notes);
-  return reflow(tx, pi, mi, staff, 1);
+  insertCore(tx, pi, mi, staff, voice, t, dur, notes);
+  return reflow(tx, pi, mi, staff, voice);
+}
+
+// 화음으로 더하기: 그 시각에 시작하는 음(같은 오선·성부)이 있으면 높이를 더하고, 없으면 새 음으로 넣음
+export function addToChord(score: Score, pi: number, mi: number, staff: number, t: Frac, dur: Frac, dia: number, voice = 1): Edit {
+  const part = score.parts[pi], pm = score.parts[pi].measures[mi];
+  const e = pm && pm.events.find(x => x.staff === staff && x.voice === voice && !x.rest && !x.grace && x.notes && cmp(x.t, t) === 0);
+  if (!e || part.kind === 'perc') return insertAt(score, pi, mi, staff, t, dur, dia, voice);
+  const tx = new Tx(score), p2 = tx.touch(pi, mi), ev = p2.events[pm.events.indexOf(e)];
+  const n = fromDia(dia, keyAt(score, mi));
+  if (ev.notes!.some(q => q.step === n.step && q.oct === n.oct)) return tx.done();
+  ev.notes!.push(n); ev.notes!.sort((a, b) => midiOf(a) - midiOf(b));
+  return tx.done();
+}
+// 고른 음에 화음 더하기(글자): 맨 위 음보다 위에서 가장 가까운 그 글자
+export function addLetter(score: Score, s: Sel, step: Pitch['step']): Edit {
+  const e = evOf(score, s); if (!e || !e.notes || !e.notes.length || score.parts[s.pi].kind === 'perc') return [];
+  const top = Math.max(...e.notes.map(diaOf)), st = LET.indexOf(step);
+  let d = Math.floor(top / 7) * 7 + st; if (d <= top) d += 7;
+  return addToChord(score, s.pi, s.mi, e.staff, e.t, e.dur, d, e.voice);
+}
+
+// ── 마디 넣기·지우기 ──
+const snap = (score: Score) => JSON.stringify({ measures: score.measures, parts: score.parts.map(p => p.measures) });
+// 마디 번호를 처음 번호부터 차례로(못갖춘마디 '0'은 그대로 두고 그다음부터)
+function renumber(score: Score) {
+  const first = parseInt(score.measures[0] && score.measures[0].number, 10);
+  const start = isFinite(first) ? first : 1;
+  score.measures.forEach((M, i) => { M.number = String(start + i); });
+}
+// at 앞에 빈 마디 count개(그 자리의 박자 길이, 모든 파트 온쉼표)
+export function insertMeasures(score: Score, at: number, count = 1): Edit {
+  const before = snap(score), ref = score.measures[Math.min(at, score.measures.length - 1)];
+  const ts = timeAt(score, Math.max(0, Math.min(at, score.measures.length - 1)));
+  const len: Frac = ts ? [ts[0], ts[1]] : ref ? ref.len : [1, 1];
+  const atEnd = at >= score.measures.length;
+  for (let k = 0; k < count; k++) {
+    const M: Score['measures'][number] = { number: '', len: [len[0], len[1]] };
+    // 맨 앞에 넣으면 첫 마디의 박자·조·빠르기를 새 첫 마디로 옮김
+    if (at === 0 && k === 0 && ref) { for (const key of ['time', 'key', 'mode', 'tempo'] as const) if (ref[key] != null) { (M as any)[key] = ref[key]; delete (ref as any)[key]; } }
+    score.measures.splice(at + k, 0, M);
+    for (const p of score.parts) {
+      const evs: Ev[] = []; for (let st = 1; st <= p.staves; st++) evs.push({ staff: st, voice: 1, t: ZERO, dur: [len[0], len[1]], rest: true, measureRest: true });
+      p.measures.splice(at + k, 0, { events: evs });
+    }
+  }
+  void atEnd;
+  // 사이에 넣으면 앞뒤를 잇던 붙임줄은 끊음
+  if (at > 0) for (const p of score.parts) {
+    for (const e of p.measures[at - 1].events) for (const n of e.notes || []) if (n.tieStart && cmp(add(e.t, e.dur), score.measures[at - 1].len) === 0) n.tieStart = undefined;
+    const nx = p.measures[at + count]; if (nx) for (const e of nx.events) for (const n of e.notes || []) if (n.tieStop && cmp(e.t, ZERO) === 0) n.tieStop = undefined;
+  }
+  renumber(score);
+  return [{ pi: -1, mi: -1, before: { events: [] }, after: { events: [] }, whole: { before, after: snap(score) } }];
+}
+// from부터 count개 지우기. 지운 마디의 박자·조·빠르기 바뀜은 다음 마디로 넘김(뒤 마디들의 박자가 그대로이게)
+export function deleteMeasures(score: Score, from: number, count = 1): Edit {
+  if (score.measures.length - count < 1) return [];
+  const before = snap(score), to = from + count;
+  const carry: Partial<Score['measures'][number]> = {};
+  for (let i = from; i < to; i++) { const M = score.measures[i]; for (const key of ['time', 'key', 'mode', 'tempo'] as const) if (M[key] != null) (carry as any)[key] = M[key]; }
+  const next = score.measures[to];
+  if (next) for (const key of ['time', 'key', 'mode', 'tempo'] as const) if ((carry as any)[key] != null && next[key] == null) (next as any)[key] = (carry as any)[key];
+  if (next && carry.time && !next.time) next.time = carry.time;
+  score.measures.splice(from, count);
+  for (const p of score.parts) p.measures.splice(from, count);
+  // 지운 자리 앞뒤 붙임줄 끊기
+  for (const p of score.parts) {
+    const pv = p.measures[from - 1]; if (pv) for (const e of pv.events) for (const n of e.notes || []) if (n.tieStart && cmp(add(e.t, e.dur), score.measures[from - 1].len) === 0) n.tieStart = undefined;
+    const nx = p.measures[from]; if (nx) for (const e of nx.events) for (const n of e.notes || []) if (n.tieStop && cmp(e.t, ZERO) === 0) n.tieStop = undefined;
+  }
+  renumber(score);
+  return [{ pi: -1, mi: -1, before: { events: [] }, after: { events: [] }, whole: { before, after: snap(score) } }];
 }
 
 // 음 옮기기: 다른 자리(같은 파트의 어느 마디·오선)로 — 높이는 온음 단위로 dDia만큼. 같은 자리면 높이만
@@ -264,6 +338,6 @@ export function moveTo(score: Score, s: Sel, mi: number, staff: number, t: Frac,
   else { insertCore(tx, s.pi, s.mi, e.staff, e.voice, e.t, e.dur, null); }
   void pm0;
   reflow(tx, s.pi, s.mi, e.staff, voice0);
-  insertCore(tx, s.pi, mi, staff, 1, t, e.dur, notes, e);
-  return reflow(tx, s.pi, mi, staff, 1);
+  insertCore(tx, s.pi, mi, staff, voice0, t, e.dur, notes, e);   // 원래 성부 그대로
+  return reflow(tx, s.pi, mi, staff, voice0);
 }

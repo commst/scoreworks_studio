@@ -75,6 +75,34 @@ const path = require('path'), fs = require('fs');
     s0 = await seq(); await pg.click('#editbar [data-ed="del"]'); await waitDraw(s0);
     const a2 = await notesIn(2);
     ok(a2 !== b2 && a2.split(' ').length === b2.split(' ').length - 1, '휴지통 단추로 지우기 ' + b2 + ' → ' + a2);
+    // 8) 둘째 성부로 넣기: 성부 2를 켜고 4마디(온음표)에 끌어 넣기
+    await pg.keyboard.press('Escape');
+    await pg.click('#voiceSeg [data-voice="2"]');
+    const m4 = await pg.evaluate(() => { const m = document.querySelectorAll('#score g.measure')[3]; const ps = [...m.querySelector('g.staff').children].filter(c => c.tagName === 'path').slice(0, 5).map(p => p.getBoundingClientRect()); const r = m.getBoundingClientRect(); return { x: r.left + r.width * 0.55, y: ps[4].top + ps[4].height / 2 }; });
+    const cq = await (await pg.$('#palette [data-pal="1/4"]')).boundingBox();
+    s0 = await seq();
+    await pg.mouse.move(cq.x + cq.width / 2, cq.y + cq.height / 2); await pg.mouse.down(); await pg.mouse.move(m4.x, m4.y, { steps: 12 }); await pg.mouse.up(); await waitDraw(s0);
+    const v2 = await pg.evaluate(() => __studio.score.parts[0].measures[3].events.filter(e => e.voice === 2 && !e.rest).map(e => e.notes.map(n => n.step + n.oct).join()).join());
+    ok(/E4/.test(v2) && /D5/.test(await notesIn(3)), '둘째 성부 넣기 ' + v2 + ' / 첫 성부 ' + await notesIn(3));
+    await pg.click('#voiceSeg [data-voice="1"]');
+    // 9) 화음: Shift를 누른 채 3마디 첫 음 자리(아래 줄)에 놓기
+    const nb3 = await pg.evaluate(() => { const g = document.querySelector('[data-id="e0-2-0-0"] .notehead') || document.querySelector('[data-id^="e0-2-"] .notehead'); const r = g.getBoundingClientRect(); const ps = [...g.closest('g.staff').children].filter(c => c.tagName === 'path').slice(0, 5).map(p => p.getBoundingClientRect()); return { x: r.left + r.width / 2, y: ps[4].top + ps[4].height / 2 }; });
+    const b3 = await notesIn(2); s0 = await seq();
+    await pg.mouse.move(cq.x + cq.width / 2, cq.y + cq.height / 2); await pg.keyboard.down('Shift'); await pg.mouse.down(); await pg.mouse.move(nb3.x, nb3.y, { steps: 12 }); await pg.mouse.up(); await pg.keyboard.up('Shift'); await waitDraw(s0);
+    const a3 = await notesIn(2);
+    ok(/\.E4|E4\./.test(a3), '화음 더하기 ' + b3 + ' → ' + a3);
+    // 10) 마디 넣기·지우기
+    const n0 = await pg.evaluate(() => __studio.score.measures.length);
+    const anyNote = async mi => { const hb = await pg.evaluate(mi => { const g = [...document.querySelectorAll('#score [data-id^="e0-' + mi + '-"]')].find(x => x.classList.contains('note') || x.classList.contains('rest') || x.classList.contains('mRest')); const r = (g.querySelector('.notehead') || g).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, mi); await pg.mouse.click(hb.x, hb.y); };
+    await anyNote(1);
+    s0 = await seq(); await pg.click('#editbar [data-ms="after"]'); await waitDraw(s0);
+    ok(await pg.evaluate(() => __studio.score.measures.length) === n0 + 1 && await pg.evaluate(() => document.querySelectorAll('#score g.measure').length) === n0 + 1, '마디 뒤에 넣기 → ' + (n0 + 1));
+    await anyNote(0);
+    s0 = await seq(); await pg.click('#editbar [data-ms="del"]'); await waitDraw(s0);
+    ok(await pg.evaluate(() => __studio.score.measures.length) === n0 && await pg.evaluate(() => __studio.score.measures[0].time != null), '마디 지우기(첫 마디, 박자표는 다음 마디로)');
+    s0 = await seq(); await pg.keyboard.press('Control+z'); await waitDraw(s0);
+    s0 = await seq(); await pg.keyboard.press('Control+z'); await waitDraw(s0);
+    ok(await pg.evaluate(() => __studio.score.measures.length) === n0, '마디 되돌리기');
     await pg.screenshot({ path: '/tmp/studio-drag.png' });
     ok(!errs.length, '콘솔 오류 ' + errs.slice(0, 3).join(' | '));
   } finally { await br.close(); srv.kill(); }

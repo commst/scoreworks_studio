@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { DOMParser } from '@xmldom/xmldom';
 import { parseMusicXml } from '../src/io/musicxml-in.ts';
 import { toMusicXml, typeOf } from '../src/io/musicxml-out.ts';
-import { transpose, setLetter, toRest, setDur, toggleDot, undo, redo, step, insertAt, moveTo, diaOf, type Sel } from '../src/edit/ops.ts';
+import { transpose, setLetter, toRest, setDur, toggleDot, undo, redo, step, insertAt, moveTo, diaOf, addToChord, addLetter, insertMeasures, deleteMeasures, type Sel } from '../src/edit/ops.ts';
 import { midiOf } from '../src/swc/pitch.ts';
 import { add, cmp, ZERO } from '../src/swc/frac.ts';
 import type { Score } from '../src/swc/model.ts';
@@ -88,4 +88,36 @@ test('끌어 넣기·옮기기', () => {
   eds.push(insertAt(sc, 0, 2, 1, ZERO, [1, 4], null)); check(sc);
   for (const ed of eds.reverse()) undo(sc, ed);
   assert.equal(J(sc), orig);
+});
+
+test('둘째 성부·화음', () => {
+  const sc = load(), orig = J(sc), eds = [];
+  eds.push(insertAt(sc, 0, 3, 1, [1, 2], [1, 4], 4 * 7 + 2, 2)); check(sc);   // 4마디 셋째 박에 둘째 성부 E4
+  const v2 = sc.parts[0].measures[3].events.filter(e => e.voice === 2);
+  assert.ok(v2.some(e => e.notes && e.notes[0].step === 'E'), '둘째 성부 음');
+  assert.ok(v2.filter(e => e.rest).every(e => e.hidden), '둘째 성부 빈자리는 숨은 쉼표');
+  assert.ok(sc.parts[0].measures[3].events.some(e => e.voice === 1 && e.notes && cmp(e.dur, [1, 1]) === 0), '첫 성부 온음표 그대로');
+  eds.push(addToChord(sc, 0, 2, 1, ZERO, [1, 2], 4 * 7 + 4)); check(sc);   // 3마디 첫 음(E5)에 G4 더하기
+  const c = sc.parts[0].measures[2].events.find(e => e.notes && cmp(e.t, ZERO) === 0)!;
+  assert.equal(c.notes!.map(n => n.step + n.oct).join(), 'G4,E5');
+  eds.push(addLetter(sc, { pi: 0, mi: 2, ei: sc.parts[0].measures[2].events.indexOf(c) }, 'C'));
+  assert.equal(c.notes!.map(n => n.step + n.oct).join(), 'G4,E5,C6');
+  for (const ed of eds.reverse()) undo(sc, ed);
+  assert.equal(J(sc), orig);
+});
+
+test('마디 넣기·지우기', () => {
+  const sc = load(), orig = J(sc), n0 = sc.measures.length;
+  const a = insertMeasures(sc, 2, 2); check(sc);
+  assert.equal(sc.measures.length, n0 + 2);
+  assert.equal(sc.measures.map(m => m.number).join(), '1,2,3,4,5,6');
+  assert.ok(sc.parts[0].measures[2].events[0].measureRest);
+  const b = deleteMeasures(sc, 0, 1); check(sc);   // 첫 마디(박자표 있음) 지우기 → 박자는 다음 마디로
+  assert.equal(sc.measures.length, n0 + 1);
+  assert.ok(sc.measures[0].time, '박자표가 넘어옴');
+  const c = insertMeasures(sc, sc.measures.length, 1); check(sc);   // 끝에 넣기
+  assert.equal(sc.measures.length, n0 + 2);
+  undo(sc, c); undo(sc, b); undo(sc, a);
+  assert.equal(J(sc), orig);
+  redo(sc, a); assert.equal(sc.measures.length, n0 + 2);
 });

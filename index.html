@@ -68,7 +68,16 @@
     <button class="ib txt" id="dotBtn" type="button" title="점 붙이기·떼기 (.)">점</button>
   </div>
   <div class="grp">
+    <span class="glab">성부</span>
+    <div class="seg" id="voiceSeg" title="새 음을 넣을 성부 (한 오선의 윗성부 1 · 아랫성부 2)"><button data-voice="1" type="button" class="cur">1</button><button data-voice="2" type="button">2</button></div>
+    <button class="ib txt" id="chordBtn" type="button" title="켜면 넣는 음을 그 자리 음에 화음으로 더함 (Shift를 누른 채 놓아도 같음 · 고른 음에서는 Shift+글자)">화음</button>
+  </div>
+  <div class="grp">
     <button class="ib del" data-ed="del" type="button" title="지우기 (Delete) — 음을 악보 밖으로 끌어 놓아도 지워집니다" aria-label="지우기"><svg><use href="#i-trash"/></svg></button>
+  </div>
+  <div class="grp">
+    <span class="glab">마디</span>
+    <div class="seg"><button data-ms="before" type="button" title="고른 음이 있는 마디 앞에 빈 마디 넣기">앞에 +</button><button data-ms="after" type="button" title="고른 음이 있는 마디 뒤에 빈 마디 넣기">뒤에 +</button><button data-ms="del" type="button" title="고른 음이 있는 마디 지우기(모든 파트)">지우기</button></div>
   </div>
   <div class="sel-chip" id="selChip"><span id="selInfo">음을 누르면 고칠 수 있습니다</span></div>
   <div class="grp right">
@@ -95,6 +104,8 @@
         <dt>C D E F G A B</dt><dd>그 음으로 (쉼표면 새 음)</dd>
         <dt>1 ~ 7</dt><dd>64분 · 32분 · 16분 · 8분 · 4분 · 2분 · 온음표</dd>
         <dt>.</dt><dd>점 붙이기·떼기</dd>
+        <dt>Shift + C~B</dt><dd>고른 음에 화음 더하기 (위로)</dd>
+        <dt>Shift + 놓기</dt><dd>음표를 그 자리 음에 화음으로</dd>
         <dt>Delete</dt><dd>지우기 (쉼표로) — 휴지통 단추, 음을 악보 밖으로 끌어 놓기도 같음</dd>
         <dt>Ctrl + Z / Y</dt><dd>되돌리기 / 다시</dd>
         <dt>Ctrl + S</dt><dd>저장 (.swc)</dd>
