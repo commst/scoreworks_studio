@@ -1,7 +1,7 @@
 # ScoreWorks Studio 인수인계 메모
 
 새 대화에서 이어 작업할 때 먼저 읽는 문서. 무엇을 왜 고쳤는지는 CHANGELOG.md, 구성·실행은 README.md, 결정 사항은 docs/DESIGN.md.
-(마지막 갱신: 2026-11-24, CHANGELOG 16번까지)
+(마지막 갱신: 2026-11-24, CHANGELOG 17번까지)
 
 ## 1. 작업 규칙 (사용자 요청 — ScoreWorks와 같음)
 

@@ -93,6 +93,7 @@ npm test           # 시험
 | `node test/pw-drag.cjs [파일]` | 끌어 넣기·끌어 옮기기(빌드 뒤) |
 | `node test/pw-gueum.cjs <총보>` | 장구 구음·구음 적기·장구 정간보(빌드 뒤) |
 | `node test/pw-yul.cjs <파일>` | 율명·정간보 보기(빌드 뒤) |
+| `node test/pw-update.cjs` | 새 판 알림·새로 고침 뒤 이어서 열기(빌드 뒤) |
 | `node test/pw-save.cjs <파일>` | 자동 저장·이어서 열기·.swc 저장/열기(빌드 뒤) |
 | `npm test` (adapter) | .swc → ScoreWorks 재생 계획: 음 수·높이·붙임줄·도돌이 |
 | `npm run build && NODE_PATH=… node test/pw-smoke.cjs <파일…>` | 화면 시험(Playwright): 열기 → 그리기(마디 수) → 재생·따라가기 |

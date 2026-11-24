@@ -727,3 +727,42 @@ function openHistory() {
 }
 $('histBtn').onclick = openHistory;
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !helpView.hidden) { ev.stopPropagation(); closeModal(helpView); } }, true);
+
+// ── 새 판 알림 (ScoreWorks와 같음) ──
+// 사이트(GitHub Pages)에서 열었을 때 version.json을 가끔 확인해, 열어 둔 화면보다 새 판이 올라와 있으면 '새로 고침' 안내.
+// 새로 고치기 전에 고친 내용을 바로 저장하고, 새 판이 열리면 그 악보를 이어서 엶
+const RESUME_KEY = 'studio.resumeAfterUpdate';
+async function checkUpdate(force = false) {
+  const hosted = (() => { try { return window.top === window && /^https?:/.test(location.href) && !/claude\.ai|claudeusercontent/.test(location.host); } catch (e) { return false; } })();
+  if (!hosted && !force) return;
+  try {
+    const r = await fetch(new URL('version.json', location.href).href + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j && j.v && j.v > __APP_VER__ && j.v !== updDismissed) {
+      $('updateText').textContent = `새 판(${j.v})이 나왔습니다. 지금 화면은 ${__APP_VER__} 판입니다. 새로 고치면 최신 판으로 바뀝니다(고친 악보는 저장해 두었다가 그대로 다시 엽니다).`;
+      $('updateBar').hidden = false; $('updateBar').dataset.v = j.v;
+    }
+  } catch (e) { /* 연결 없음 */ }
+}
+let updDismissed = '';
+(window as any).__checkUpdate = checkUpdate;   // 시험용
+$('updateGo').onclick = async () => {
+  const v = $('updateBar').dataset.v || String(Date.now());
+  if (state.score) {   // 기다리지 않고 바로 저장
+    clearTimeout(saveT);
+    await saveLast({ score: state.score, fileName: state.fileName, lines: state.lines, view: state.view, at: Date.now() });
+    try { sessionStorage.setItem(RESUME_KEY, '1'); } catch (e) { /* 없음 */ }
+  }
+  location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash);
+};
+$('updateLater').onclick = () => { updDismissed = $('updateBar').dataset.v || ''; $('updateBar').hidden = true; };
+setTimeout(checkUpdate, 4000);
+setInterval(checkUpdate, 10 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+// 새 판으로 바꾼 뒤: 고치던 악보를 바로 이어서 엶
+(async () => {
+  let go = false; try { go = sessionStorage.getItem(RESUME_KEY) === '1'; sessionStorage.removeItem(RESUME_KEY); } catch (e) { /* 없음 */ }
+  if (!go) return;
+  const last = await loadLast(); if (last && !state.score) openScore(last.score, last.fileName, [], { lines: last.lines, view: last.view });
+})();

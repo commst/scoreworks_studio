@@ -246,3 +246,9 @@ dl.help .eg { display: block; margin-top: 6px; padding: 7px 10px; border-radius:
 .hlist details[open] summary::before { content: '－'; }
 .hlist details.hbug summary::before { color: #b3412f; }
 .hlist details p { margin: 0; padding: 0 12px 11px 32px; color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+/* 새 판 알림 */
+.update-bar { position: fixed; z-index: 70; top: 64px; left: 50%; transform: translateX(-50%); width: min(720px, calc(100% - 24px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 16px; border-radius: 12px; background: #fff7df; color: var(--ink); border: 1px solid #f0d48a; box-shadow: 0 10px 30px rgba(40, 50, 80, .22); }
+.update-bar[hidden] { display: none; }
+.update-bar > span:first-child { flex: 1 1 280px; font-size: 14px; line-height: 1.5; }
+.ub-btns { display: flex; gap: 8px; }

@@ -50,6 +50,10 @@
   </div>
 </header>
 
+<div class="update-bar" id="updateBar" role="status" hidden>
+  <span id="updateText">새 판이 나왔습니다.</span>
+  <span class="ub-btns"><button class="btn primary" id="updateGo" type="button">새로 고침</button><button class="btn" id="updateLater" type="button">나중에</button></span>
+</div>
 <div class="ribbon" id="editbar" hidden>
   <div class="grp">
     <button class="ib" id="undo" type="button" title="되돌리기 (Ctrl+Z)" aria-label="되돌리기" disabled><svg><use href="#i-undo"/></svg></button>
@@ -188,7 +192,7 @@
         <dt>보기 · 확대</dt>
         <dd>'보기'에서 총보 또는 파트 하나(빨리 그려져 고치기 편함), −/+로 크기. 파트보(파트 하나)는 쉬는 마디를 여러 마디 쉼표로 묶어 보여 줍니다.</dd>
         <dt>알아 둘 점</dt>
-        <dd>PDF 해석은 ScoreWorks와 같아 드물게 음·박을 잘못 읽을 수 있습니다 — [곡 정보] 탭의 '해석을 확인할 곳'을 보고 고치세요. 마디를 넣거나 지우면 마디 번호를 처음부터 차례로 다시 매깁니다. 지원 브라우저: 크롬·엣지·사파리·삼성 인터넷 최근 판(아이패드 사파리 포함).</dd>
+        <dd>PDF 해석은 ScoreWorks와 같아 드물게 음·박을 잘못 읽을 수 있습니다 — [곡 정보] 탭의 '해석을 확인할 곳'을 보고 고치세요. 마디를 넣거나 지우면 마디 번호를 처음부터 차례로 다시 매깁니다. 지원 브라우저: 크롬·엣지·사파리·삼성 인터넷 최근 판(아이패드 사파리 포함). 새 판이 올라오면 화면 위에 알림이 뜹니다 — [새로 고침]을 누르면 고치던 악보를 그대로 다시 엽니다.</dd>
       </dl>
     </div>
   </div>
@@ -218,7 +222,8 @@
 
 <template id="histTpl">
   <section class="hday"><h3>11월 24일</h3>
-    <h4>기능 업데이트 <small>12</small></h4><ul class="hlist">
+    <h4>기능 업데이트 <small>13</small></h4><ul class="hlist">
+      <li><details><summary>새 판 알림</summary><p>열어 둔 사이에 새 판이 올라오면 화면 위에 알림이 뜹니다. [새로 고침]을 누르면 고치던 악보를 바로 저장하고 새 판으로 바꾼 뒤 그 악보를 그대로 다시 엽니다. [나중에]를 누르면 그 판 알림은 다시 띄우지 않습니다.</p></details></li>
       <li><details><summary>사용법 · 업데이트 이력 · 사용설명서</summary><p>위 막대에 [업데이트 이력]·[프로그램 사용법]·[사용설명서 받기]가 생겼습니다. 사용설명서는 그림과 함께 처음부터 따라 하는 PDF입니다.</p></details></li>
       <li><details><summary>구음: 장구 자동 · 구음 적기 · 장구 정간보</summary><p>율명·구음 보기에서 장구는 같은 시각에 친 것을 묶어 덩·쿵·덕·기덕·더러러러를 자동으로 붙입니다. 거문고·피리·25현 가야금은 음을 고르고 편집 막대 '구음' 칸에 적은 뒤 Enter(다음 음으로 넘어가며 계속). MusicXML에는 가사로 저장됩니다. 정간보에서 장구 파트도 볼 수 있습니다.</p></details></li>
       <li><details><summary>율명 보기 · 정간보 보기</summary><p>오선 아래에 율명(황·태·중·임·남, 하배·배·청·중청)을 붙여 보거나, 파트 하나를 정간보(한 행 = 한 마디, 쉼표 △)로 바꿔 봅니다. 황종(기본 E♭4)과 한글·한자는 [율명] 탭에서 고릅니다. 정간보에서도 재생 따라가기가 됩니다.</p></details></li>
