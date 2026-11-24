@@ -100,7 +100,7 @@ function chunkEnd(sc: Score, mr: Map<number, number>, a: number): number {
 }
 // 조각 그리기. decide: 마지막 단(줄)이 덜 찬 채 끝나지 않게, 마지막 단은 잘라 내고 다음 조각이 그 마디부터 시작
 async function renderChunk(c: Chunk, sc: Score, w: number, decide: boolean) {
-  const xml = toMusicXml(sc, { multiRest: mrNow.size > 0, ids: true, pidx: state.view < 0 ? undefined : [state.view], from: c.from, to: c.to });
+  const xml = toMusicXml(sc, { multiRest: mrNow.size > 0, ids: true, shortNames: true, pidx: state.view < 0 ? undefined : [state.view], from: c.from, to: c.to });
   const eng = await engrave(xml, { width: w, zoom: state.zoom, first: c.from === 0 });
   let h = ''; for (let p = 1; p <= eng.pages; p++) h += eng.svg(p);
   c.el.style.height = ''; c.el.innerHTML = h;

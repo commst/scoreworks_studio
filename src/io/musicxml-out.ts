@@ -45,7 +45,7 @@ export function multiRestGroups(score: Score): Map<number, number> {
 
 // ids: 음마다 id(e파트-마디-사건-음) — 화면에서 누른 음을 찾는 데 씀(Verovio가 그대로 옮김)
 // from·to: 이 마디들만(화면을 조각으로 나눠 그릴 때) — 첫 마디에 그때의 조표·박자(박자표는 감춤)·음자리표를 적음
-export function toMusicXml(score: Score, opts: { multiRest?: boolean; ids?: boolean; pidx?: number[]; from?: number; to?: number } = {}): string {
+export function toMusicXml(score: Score, opts: { multiRest?: boolean; ids?: boolean; pidx?: number[]; from?: number; to?: number; shortNames?: boolean } = {}): string {
   const mr = opts.multiRest ? multiRestGroups(score) : null;
   const D = divisionsOf(score), dv = (f: Frac) => Math.round((f[0] * 4 * D) / f[1]);
   const o: string[] = [];
@@ -59,9 +59,9 @@ export function toMusicXml(score: Score, opts: { multiRest?: boolean; ids?: bool
   let g = '', gn = 0;
   score.parts.forEach(p => {
     if ((p.group || '') !== g) { if (g) o.push(`<part-group type="stop" number="${gn}"/>`); g = p.group || ''; if (g) o.push(`<part-group type="start" number="${++gn}"><group-symbol>bracket</group-symbol><group-barline>yes</group-barline></part-group>`); }
-    // 둘째 단부터는 줄임 이름(없으면 이름, 길면 앞 5자). 조각으로 그릴 때(from > 0)는 첫 단도 줄임 이름 — 단마다 왼쪽 여백이 같게
+    // 둘째 단부터는 줄임 이름(없으면 이름, 길면 앞 5자). 화면(shortNames)·조각(from > 0)은 첫 단도 줄임 이름 — 단마다 왼쪽 여백이 같게
     const ab = p.abbr || (p.name.length <= 6 ? p.name : p.name.slice(0, 5) + '.');
-    o.push(`<score-part id="${esc(p.id)}"><part-name>${esc(opts.from ? ab : p.name)}</part-name><part-abbreviation>${esc(ab)}</part-abbreviation></score-part>`);
+    o.push(`<score-part id="${esc(p.id)}"><part-name>${esc(opts.from || opts.shortNames ? ab : p.name)}</part-name><part-abbreviation>${esc(ab)}</part-abbreviation></score-part>`);
   });
   if (g) o.push(`<part-group type="stop" number="${gn}"/>`);
   o.push('</part-list>');
