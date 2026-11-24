@@ -1,0 +1,30 @@
+{
+  "from": "https://github.com/commst/scoreworks",
+  "commit": "93b6c88",
+  "date": "2026-11-24",
+  "modules": [
+    "score-parser.js",
+    "outline-glyphs.js",
+    "outline-templates.js",
+    "audio-engine.js",
+    "melody-engine.js",
+    "musicxml.js",
+    "samples.json"
+  ],
+  "banks": [
+    "ajaeng",
+    "ajaeng_pizz",
+    "daegeum",
+    "daepiri",
+    "gayageum",
+    "geomungo",
+    "haegeum",
+    "piano",
+    "piri",
+    "saenghwang",
+    "sogeum",
+    "taepyeongso",
+    "timpani",
+    "yanggeum"
+  ]
+}

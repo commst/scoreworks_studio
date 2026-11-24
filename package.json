@@ -1,0 +1,23 @@
+{
+  "name": "scoreworks-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ScoreWorks Studio — 국악관현악 작곡·악보 편집 웹 프로그램",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "sync-shared": "node tools/sync-shared.mjs",
+    "test": "node --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.9.12",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.6"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.10.38",
+    "verovio": "^6.4.1"
+  }
+}
