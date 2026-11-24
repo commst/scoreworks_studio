@@ -5,6 +5,7 @@ import { parsePdf } from './io/pdf-in.ts';
 import { saveLast, loadLast, toSwcFile, fromSwcFile } from './io/store.ts';
 import { toMusicXml, multiRestGroups } from './io/musicxml-out.ts';
 import { engrave } from './view/engrave.ts';
+import { annotateYul, renderJeonggan, noteNameOf } from './view/yul.ts';
 import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './play/player.ts';
 // @ts-ignore
 import { INSTRUMENTS } from '../shared/scoreworks/melody-engine.js';
@@ -109,6 +110,7 @@ async function renderChunk(c: Chunk, sc: Score, w: number, decide: boolean) {
   const eng = await engrave(xml, { width: w, zoom: state.zoom, first: c.from === 0 });
   let h = ''; for (let p = 1; p <= eng.pages; p++) h += eng.svg(p);
   c.el.style.height = ''; c.el.innerHTML = h;
+  if (vs.mode === 'yul') annotateYul(c.el, state.score!, yulOpts());
   if (!decide || c.to >= sc.measures.length) return;
   const sys = c.el.querySelectorAll('g.system');
   if (sys.length < 2) return;
@@ -128,6 +130,7 @@ function afterDraw() {
 }
 async function draw() {
   if (!state.score) return;
+  if (vs.mode === 'jg') return drawJeonggan();
   const tok = ++drawTok, t = performance.now();
   const w = scoreEl.clientWidth - 32, sc = viewScore();
   // 파트보(파트 하나)는 쉬는 마디들을 여러 마디 쉼표로 묶어 그린다(피날레 파트보처럼)
@@ -152,6 +155,7 @@ async function draw() {
 }
 // 고친 마디가 든 조각만 다시 그림(조각 나눔이 그대로일 때). 아니면 전체
 async function redrawMeasures(mis: number[]) {
+  if (vs.mode === 'jg') return draw();
   if (!state.score || !chunks.length) return draw();
   const sc = viewScore(), mr = sc.parts.length === 1 ? multiRestGroups(sc) : new Map<number, number>();
   if (JSON.stringify([...mr]) !== JSON.stringify([...mrNow])) return draw();
@@ -160,6 +164,46 @@ async function redrawMeasures(mis: number[]) {
   afterDraw();
   status(`다시 그림 ${Math.round(performance.now() - t)}ms`);
 }
+// ── 보기 방식: 오선 / 오선 + 율명 / 정간보 (설정은 이 브라우저에 기억) ──
+interface ViewSet { mode: 'staff' | 'yul' | 'jg'; base: number; hanja: boolean; unit: string; staff: number }
+const vs: ViewSet = (() => { try { return { mode: 'staff', base: 63, hanja: false, unit: 'auto', staff: 1, ...JSON.parse(localStorage.getItem('studio.view') || '{}') }; } catch (e) { return { mode: 'staff', base: 63, hanja: false, unit: 'auto', staff: 1 }; } })();
+const yulOpts = () => ({ base: vs.base, hanja: vs.hanja });
+function saveVs() { try { localStorage.setItem('studio.view', JSON.stringify(vs)); } catch (e) { /* 없음 */ } }
+// 정간보는 파트 하나: 보기에서 고른 파트, 총보면 첫 선율 파트
+const jgPart = () => state.view >= 0 ? state.view : Math.max(0, state.score!.parts.findIndex(p => p.kind !== 'perc'));
+async function drawJeonggan() {
+  const sc = state.score!, pi = jgPart(), part = sc.parts[pi], t = performance.now();
+  ++drawTok;
+  const unit: [number, number] | null = vs.unit === 'auto' ? null : vs.unit === 'q' ? [1, 4] : vs.unit === 'e' ? [1, 8] : [1, 2];
+  const sheet = document.createElement('div'); sheet.className = 'sheet jg-sheet';
+  scoreEl.innerHTML = ''; scoreEl.appendChild(sheet);
+  chunks = []; mrNow = new Map();
+  const cols = renderJeonggan(sheet, sc, pi, { ...yulOpts(), unit, staff: Math.min(vs.staff, part.staves) });
+  state.elOf = sc.measures.map((_, i) => i);
+  state.measureEls = cols; cur = -1; showSel();
+  document.documentElement.dataset.drawn = String(cols.length);
+  document.documentElement.dataset.drawnOk = 'true';
+  document.documentElement.dataset.drawSeq = String(++drawSeq);
+  status(`정간보 · ${part.name} · ${((performance.now() - t) / 1000).toFixed(1)}초`);
+}
+function viewSetUi() {
+  document.querySelectorAll<HTMLButtonElement>('#modeSeg [data-mode]').forEach(b => b.classList.toggle('cur', b.dataset.mode === vs.mode));
+  $<HTMLSelectElement>('yulBase').value = String(vs.base); $<HTMLSelectElement>('yulChar').value = vs.hanja ? 'hj' : 'ko';
+  $<HTMLSelectElement>('jgUnit').value = vs.unit; $<HTMLSelectElement>('jgStaff').value = String(vs.staff);
+  document.body.classList.toggle('jg-mode', vs.mode === 'jg');
+  $('jgNote').hidden = vs.mode !== 'jg';
+}
+document.querySelectorAll<HTMLButtonElement>('#modeSeg [data-mode]').forEach(b => b.onclick = () => {
+  vs.mode = b.dataset.mode as ViewSet['mode']; saveVs(); viewSetUi();
+  if (vs.mode === 'jg') { state.sel = null; editUi(); }
+  draw();
+});
+$('yulBase').onchange = () => { vs.base = +$<HTMLSelectElement>('yulBase').value; saveVs(); viewSetUi(); if (vs.mode !== 'staff') draw(); };
+$('yulChar').onchange = () => { vs.hanja = $<HTMLSelectElement>('yulChar').value === 'hj'; saveVs(); if (vs.mode !== 'staff') draw(); };
+$('jgUnit').onchange = () => { vs.unit = $<HTMLSelectElement>('jgUnit').value; saveVs(); if (vs.mode === 'jg') draw(); };
+$('jgStaff').onchange = () => { vs.staff = +$<HTMLSelectElement>('jgStaff').value; saveVs(); if (vs.mode === 'jg') draw(); };
+viewSetUi(); void noteNameOf;
+
 // 보기: 총보 또는 파트 하나(파트 하나는 빨리 그려져 고치기 편함)
 function viewScore(): Score { const sc = state.score!; return state.view < 0 ? sc : { ...sc, parts: [sc.parts[state.view]] }; }
 function viewUi() {

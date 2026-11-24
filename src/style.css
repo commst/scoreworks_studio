@@ -182,3 +182,29 @@ select { height: 36px; padding: 0 8px; border: 1px solid var(--line-2); border-r
   .ribbon { gap: 8px; } .sel-chip { order: 9; flex-basis: 100%; }
   .status { display: none; }
 }
+
+/* 율명 · 정간보 */
+.stage svg text.yul { fill: #2f4a86; font-family: var(--font); font-weight: 600; }
+.stage svg g.measure.now text.yul { fill: var(--now); }
+.setbox { display: grid; gap: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); }
+.setbox h3 { margin: 0; font-size: 15px; }
+.setbox label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.setbox select { width: 100%; font-weight: 500; }
+.setbox .hint { margin: 0; line-height: 1.5; }
+body.jg-mode #selChip, body.jg-mode .ribbon > .grp:not(.right) { display: none; }
+.sel-chip[hidden] { display: none; }
+.jg-note { background: #eef3e6 !important; color: #3d6b2e !important; }
+.jg-sheet { padding: 22px 26px 30px; }
+.jg-head { display: flex; align-items: baseline; justify-content: center; gap: 12px; margin-bottom: 18px; }
+.jg-head b { font-size: 22px; }
+.jg-head span { color: var(--muted); font-size: 13.5px; }
+.jg { display: flex; flex-direction: row-reverse; flex-wrap: wrap; align-items: flex-start; gap: 18px 0; }
+.jg-col { width: 54px; display: flex; flex-direction: column; border-left: 1px solid #333; border-right: 1px solid #333; margin-left: -1px; transition: background .1s; }
+.jg-no { height: 20px; font-size: 11px; color: var(--muted); text-align: center; border-bottom: 2px solid #333; font-style: italic; }
+.jg-cell { min-height: 46px; display: flex; flex-direction: column; border-bottom: 1px solid #333; }
+.jg-cell.g3 { border-top: 2px solid #333; }
+.jg-sub { flex: 1; min-height: 23px; display: grid; place-items: center; align-content: center; font-weight: 700; font-size: 17px; line-height: 1.05; color: #1e2433; font-family: var(--font); }
+.jg-sub + .jg-sub { border-top: 1px dotted #b7bfd2; }
+.jg-sub .ch { font-size: 12px; font-weight: 600; color: var(--muted); }
+.jg-col.now { background: #fff3c4; }
+.jg-col.now .jg-sub { color: var(--now); }

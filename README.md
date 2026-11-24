@@ -17,6 +17,7 @@
 - **음 고치기**: 음을 눌러 높이(↑↓, 글자 C~B, Ctrl+↑↓ 옥타브)·길이(1~7, 점 .)·쉼표로(Delete), ←→로 옮기기, 되돌리기(Ctrl+Z)·다시(Ctrl+Y)
 - **음 넣기·옮기기**: 편집 막대의 음표판에서 음표를 끌어다 악보에 놓기, 또는 음표 단추를 눌러 넣기 상태로 악보를 눌러 넣기. 음을 위아래로 끌면 높이, 옆으로 끌면 자리 옮기기
 - **성부·화음·마디**: 성부 1·2를 골라 넣기, '화음'(또는 Shift)으로 그 자리 음에 화음 더하기, 고른 음의 마디 앞·뒤에 빈 마디 넣기·마디 지우기
+- **율명·정간보**: 보기 방식 '율명'(오선 아래 율명, 황종 기준·한글/한자 고르기), '정간보'(파트 하나를 정간보로, 재생 따라가기)
 - **보기**: 총보 또는 파트 하나
 - **저장**: 고친 내용은 브라우저에 자동 저장(다음에 '이어서 열기'), 저장 단추·Ctrl+S로 .swc 파일, MusicXML 저장(피날레·뮤즈스코어용)
 - 아직 안 되는 것: GitHub 저장, 편성 템플릿, 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
@@ -38,6 +39,7 @@ scoreworks_studio/
 │  ├─ io/musicxml-out.ts    .swc → MusicXML (화면 그리기와 내보내기에 같이 씀)
 │  ├─ edit/ops.ts           음 고치기·되돌리기
 │  ├─ swc/pitch.ts          음 이름 ↔ MIDI
+│  ├─ view/yul.ts           율명·정간보
 │  ├─ view/engrave.ts       Verovio로 쪽 그리기
 │  ├─ play/adapter.ts       .swc → ScoreWorks 마디·음 사건
 │  └─ play/player.ts        녹음 받기, 소리 만들기(WAV)
@@ -85,6 +87,7 @@ npm test           # 시험
 | `npm test` (edit-ops) | 음 고치기·되돌리기 |
 | `node test/pw-edit.cjs <파일>` | 화면에서 음 고치기(빌드 뒤) |
 | `node test/pw-drag.cjs [파일]` | 끌어 넣기·끌어 옮기기(빌드 뒤) |
+| `node test/pw-yul.cjs <파일>` | 율명·정간보 보기(빌드 뒤) |
 | `node test/pw-save.cjs <파일>` | 자동 저장·이어서 열기·.swc 저장/열기(빌드 뒤) |
 | `npm test` (adapter) | .swc → ScoreWorks 재생 계획: 음 수·높이·붙임줄·도돌이 |
 | `npm run build && NODE_PATH=… node test/pw-smoke.cjs <파일…>` | 화면 시험(Playwright): 열기 → 그리기(마디 수) → 재생·따라가기 |

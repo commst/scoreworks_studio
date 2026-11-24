@@ -79,8 +79,10 @@
     <span class="glab">마디</span>
     <div class="seg"><button data-ms="before" type="button" title="고른 음이 있는 마디 앞에 빈 마디 넣기">앞에 +</button><button data-ms="after" type="button" title="고른 음이 있는 마디 뒤에 빈 마디 넣기">뒤에 +</button><button data-ms="del" type="button" title="고른 음이 있는 마디 지우기(모든 파트)">지우기</button></div>
   </div>
+  <div class="sel-chip jg-note" id="jgNote" hidden><span>정간보 보기 — 음을 고치려면 '오선'이나 '율명'으로</span></div>
   <div class="sel-chip" id="selChip"><span id="selInfo">음을 누르면 고칠 수 있습니다</span></div>
   <div class="grp right">
+    <div class="seg" id="modeSeg" title="악보 보기 방식"><button data-mode="staff" type="button" class="cur">오선</button><button data-mode="yul" type="button" title="오선보 아래에 율명">율명</button><button data-mode="jg" type="button" title="정간보로 바꿔 보기(파트 하나)">정간보</button></div>
     <label class="vsel">보기 <select id="view" disabled><option value="-1">총보</option></select></label>
     <div class="seg zoom"><button id="zoomOut" type="button" title="작게" aria-label="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" type="button" title="크게" aria-label="크게">+</button></div>
   </div>
@@ -91,10 +93,33 @@
     <nav class="tabs2" role="tablist">
       <button class="tab2" role="tab" aria-selected="true" data-tab="parts" type="button">파트</button>
       <button class="tab2" role="tab" aria-selected="false" data-tab="info" type="button">곡 정보</button>
+      <button class="tab2" role="tab" aria-selected="false" data-tab="look" type="button">율명</button>
       <button class="tab2" role="tab" aria-selected="false" data-tab="keys" type="button">단축키</button>
     </nav>
     <section id="tab-parts" class="tab on"><p class="hint pad">악보를 열면 파트가 여기에 나옵니다.</p></section>
     <section id="tab-info" class="tab"><p class="hint pad">악보를 열면 곡 정보가 나옵니다.</p></section>
+    <section id="tab-look" class="tab">
+      <div class="setbox">
+        <h3>율명</h3>
+        <label>황종(가운데 옥타브)
+          <select id="yulBase">
+            <option value="63">E♭4 — 정악(아악·정가)</option>
+            <option value="60">C4</option>
+            <option value="62">D4</option>
+            <option value="65">F4</option>
+            <option value="68">A♭4</option>
+            <option value="70">B♭4</option>
+          </select></label>
+        <label>글자 <select id="yulChar"><option value="ko">한글 (황·태·중·임·남)</option><option value="hj">한자 (黃·太·仲·林·南)</option></select></label>
+        <p class="hint">옥타브: 하배 · 배 · (가운데) · 청 · 중청. 옮김 악기는 소리 나는 높이로 적습니다. 곡마다 황종 기준이 다를 수 있으니(정악은 E♭, 민속악·창작곡은 악보에 따라) 맞춰 고르세요.</p>
+      </div>
+      <div class="setbox">
+        <h3>정간보</h3>
+        <label>정간 하나 <select id="jgUnit"><option value="auto">박자표 분모 (4/4 → ♩, 12/8 → ♪)</option><option value="q">4분음표 ♩</option><option value="e">8분음표 ♪</option><option value="h">2분음표</option></select></label>
+        <label>큰보표 파트 <select id="jgStaff"><option value="1">윗줄</option><option value="2">아랫줄</option></select></label>
+        <p class="hint">한 행 = 한 마디, 오른쪽에서 왼쪽으로 읽습니다. 정간 안에서 음이 여럿 시작하면 칸을 나누고, 음이 이어지는 칸은 비우며, 쉼표는 △. 파트 하나씩 보여 주니 위 '보기'에서 파트를 고르세요(총보면 첫 선율 파트). 정간보에서는 음을 고칠 수 없습니다.</p>
+      </div>
+    </section>
     <section id="tab-keys" class="tab">
       <dl class="keys">
         <dt>음 고르기</dt><dd>음·쉼표를 누름 (화음은 한 번 더 누르면 그 음만)</dd>
