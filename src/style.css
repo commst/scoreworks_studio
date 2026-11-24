@@ -1,0 +1,50 @@
+/* A안: 위 도구 막대, 왼쪽 탭, 가운데 악보, 아래 연주 막대. 밝은 테마만 */
+:root { --c: #2c5f8a; --c2: #e8f0f7; --line: #d6dde4; --txt: #222; --mute: #6b7680; --hl: rgba(220, 40, 40, .13); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { display: flex; flex-direction: column; font: 14px/1.45 system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color: var(--txt); background: #f4f6f8; }
+button, select, input { font: inherit; }
+button { height: 32px; min-width: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--txt); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--c); }
+button:disabled { opacity: .45; cursor: default; }
+button.pri { background: var(--c); border-color: var(--c); color: #fff; }
+select, input[type=number] { height: 32px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 0 6px; }
+input[type=number] { width: 64px; }
+.hint { color: var(--mute); font-size: 13px; }
+
+.top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--line); }
+.top h1 { grid-column: 2; margin: 0; font-size: 17px; color: var(--c); text-align: center; }
+.top .tools { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+#zoomLbl { min-width: 44px; text-align: center; }
+
+.body { flex: 1; display: flex; min-height: 0; }
+.side { width: 250px; flex: none; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1; border: 0; border-radius: 0; height: 36px; background: none; }
+.tabs button.on { color: var(--c); box-shadow: inset 0 -2px var(--c); font-weight: 600; }
+.tab { display: none; padding: 10px; overflow: auto; }
+.tab.on { display: block; }
+.part { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.part .nm { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 6px; }
+.part .row { display: flex; align-items: center; gap: 6px; }
+.part select { flex: 1; min-width: 0; }
+.part input[type=range] { flex: 1; }
+.info dt { color: var(--mute); font-size: 12px; } .info dd { margin: 0 0 8px; }
+
+.score { flex: 1; overflow: auto; padding: 16px; }
+.score .page { background: #fff; margin: 0 auto 16px; box-shadow: 0 1px 4px rgba(0,0,0,.12); max-width: 100%; }
+.score .page svg { display: block; width: 100%; height: auto; }
+.score .empty { margin: 12vh auto; max-width: 460px; text-align: center; padding: 32px; border: 2px dashed var(--line); border-radius: 12px; background: #fff; }
+.score.drag .empty, .score.drag { outline: 3px dashed var(--c); outline-offset: -8px; }
+.score svg g.measure.now { fill: #c62828; }
+.score svg g.measure.now .staff > path, .score svg g.measure.now .barLine path { stroke: currentColor; }
+
+.transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: #fff; border-top: 1px solid var(--line); }
+.transport label { display: flex; align-items: center; gap: 4px; }
+.status { margin-left: auto; color: var(--mute); }
+
+@media (max-width: 760px) {
+  .side { display: none; }
+  .top { grid-template-columns: 1fr; } .top h1 { grid-column: 1; } .top .tools { grid-row: 2; justify-content: center; }
+}

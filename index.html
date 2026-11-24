@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScoreWorks Studio</title>
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<header class="top">
+  <h1>ScoreWorks Studio</h1>
+  <div class="tools">
+    <button id="btnOpen" class="pri">악보 열기</button>
+    <input id="file" type="file" accept=".musicxml,.xml" hidden>
+    <span class="sep"></span>
+    <button id="zoomOut" title="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" title="크게">+</button>
+    <span class="sep"></span>
+    <button id="btnXml" disabled>MusicXML 저장</button>
+  </div>
+</header>
+<div class="body">
+  <aside class="side">
+    <nav class="tabs"><button class="on" data-tab="parts">파트</button><button data-tab="info">곡 정보</button></nav>
+    <section id="tab-parts" class="tab on"><p class="hint">악보를 열면 파트가 여기에 나옵니다.</p></section>
+    <section id="tab-info" class="tab"></section>
+  </aside>
+  <main id="score" class="score">
+    <div class="empty">
+      <p><b>MusicXML 악보</b>를 열거나 여기에 끌어다 놓으세요.</p>
+      <p class="hint">피날레·뮤즈스코어·ScoreWorks에서 내보낸 .musicxml · .xml 파일. PDF 불러오기는 다음 단계에서 됩니다.</p>
+    </div>
+  </main>
+</div>
+<footer class="transport">
+  <button id="btnPlay" class="pri" disabled>▶ 재생</button>
+  <button id="btnStop" disabled>■</button>
+  <label>빠르기 <input id="bpm" type="number" min="20" max="300" value="90"> <select id="unit"><option value="q">♩</option><option value="dq">♩.</option><option value="e">♪</option><option value="h">𝅗𝅥</option></select></label>
+  <label>속도 <select id="speed"><option>50</option><option>70</option><option>80</option><option>90</option><option selected>100</option><option>110</option><option>120</option></select>%</label>
+  <label><input id="repeats" type="checkbox" checked> 도돌이</label>
+  <span id="status" class="status"></span>
+  <audio id="audio" hidden></audio>
+</footer>
+<script type="module" src="./src/main.ts"></script>
+</body>
+</html>
