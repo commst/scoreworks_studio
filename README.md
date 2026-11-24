@@ -12,9 +12,9 @@
 
 ## 1. 지금 되는 것 (0.1 — 1단계 시작)
 
-- **악보 불러오기**: MusicXML(.musicxml·.xml·.mxl)을 열어 오선보로 보여 줍니다(조판: Verovio). 파트보는 쉬는 마디를 여러 마디 쉼표로 묶어 그립니다.
+- **악보 불러오기**: PDF(ScoreWorks 해석기로 읽음)나 MusicXML(.musicxml·.xml·.mxl)을 열어 오선보로 보여 줍니다(조판: Verovio). 파트보는 쉬는 마디를 여러 마디 쉼표로 묶어 그립니다.
 - **재생**: ScoreWorks 국악기 녹음으로 연주합니다(아래 2-3).
-- 아직 안 되는 것: PDF 불러오기, 음 입력·수정, 저장, 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
+- 아직 안 되는 것: 음 입력·수정, 저장, 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
 
 ## 2. 구성
 
@@ -26,6 +26,9 @@ scoreworks_studio/
 │  ├─ swc/model.ts          악보 형식 .swc v0 (설계서 3장)
 │  ├─ swc/frac.ts           분수(박 위치·길이를 온음표 단위로 정확하게)
 │  ├─ io/musicxml-in.ts     MusicXML → .swc
+│  ├─ io/pdf-in.ts          PDF → .swc (ScoreWorks 해석기)
+│  ├─ io/mxl.ts             .mxl 풀기
+│  ├─ swc/notate.ts         소리 길이 → 적을 수 있는 악보(쉼표·붙임줄·잇단·빔)
 │  ├─ io/musicxml-out.ts    .swc → MusicXML (화면 그리기와 내보내기에 같이 씀)
 │  ├─ view/engrave.ts       Verovio로 쪽 그리기
 │  ├─ play/adapter.ts       .swc → ScoreWorks 마디·음 사건
@@ -73,6 +76,8 @@ npm test           # 시험
 | `npm test` | MusicXML → .swc → MusicXML → .swc 왕복이 같은지(test/fixtures). 실제 악보로도 하려면 `SAMPLES_XML=<폴더> npm test` |
 | `npm test` (adapter) | .swc → ScoreWorks 재생 계획: 음 수·높이·붙임줄·도돌이 |
 | `npm run build && NODE_PATH=… node test/pw-smoke.cjs <파일…>` | 화면 시험(Playwright): 열기 → 그리기(마디 수) → 재생·따라가기 |
+| `SAMPLES_PDF=<폴더> npm test` | PDF 불러오기: 음표 종류·길이, MusicXML 왕복 |
+| `node test/cmp-scoreworks.ts <studio.musicxml> <scoreworks.musicxml>` | ScoreWorks 내보내기와 음 비교 |
 | `python3 test/xsdcheck.py <파일…>` | 내보낸 MusicXML이 MusicXML 4.0 규칙에 맞는지(XSD_DIR에 musicxml·xml·xlink.xsd) |
 
 악보(PDF·MusicXML)는 저작권 때문에 이 공개 저장소에 넣지 않습니다. 실제 악보 시험은 비공개 샘플 저장소의 파일로 합니다.
@@ -83,4 +88,5 @@ npm test           # 시험
 |---|---|---|
 | [Verovio](https://www.verovio.org) 6.4 | 악보 조판(그리기) | LGPL-3.0 — 고치지 않고 따로 된 파일로 씀 |
 | [pdf.js](https://mozilla.github.io/pdf.js/) 4.10 | PDF 악보 읽기(ScoreWorks 해석기) | Apache-2.0 |
+| [fflate](https://github.com/101arrowz/fflate) | .mxl 풀기 | MIT |
 | Vite·TypeScript | 빌드 | MIT·Apache-2.0 |

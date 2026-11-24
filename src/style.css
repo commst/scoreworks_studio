@@ -48,3 +48,4 @@ input[type=number] { width: 64px; }
   .side { display: none; }
   .top { grid-template-columns: 1fr; } .top h1 { grid-column: 1; } .top .tools { grid-row: 2; justify-content: center; }
 }
+.info .warns { font-size: 12px; color: #8a5a00; max-height: 40vh; overflow: auto; }

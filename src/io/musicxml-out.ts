@@ -30,12 +30,12 @@ function divisionsOf(score: Score): number {
 export function multiRestGroups(score: Score): Map<number, number> {
   const out = new Map<number, number>();
   const empty = (mi: number) => score.parts.every(p => { const pm = p.measures[mi]; return !pm || (!(pm.dirs && pm.dirs.length) && pm.events.every(e => e.rest || e.hidden)); });
-  const startOk = (M: MeasureInfo) => !(M.ending || M.repeatStart || M.segno || M.coda || (M.words && M.words.length));
+  const startOk = (M: MeasureInfo) => !(M.ending || M.repeatStart || M.segno || M.coda || M.rehearsal || M.tempo || (M.words && M.words.length));   // Verovio는 묶음 첫 마디의 연습 번호·빠르기를 그리지 않음
   const cont = (P: MeasureInfo, M: MeasureInfo) => startOk(M) && !(M.time || (M.key != null && M.key !== P.key) || M.tempo || M.rehearsal || M.pageBreak || M.systemBreak || M.jangdan)
     && !(P.barline || P.repeatEnd || P.endingStop);
   const ms = score.measures;
   for (let i = 0; i < ms.length;) {
-    if (!empty(i) || !startOk(ms[i]) || ms[i].tempo && i === 0) { i++; continue; }
+    if (!empty(i) || !startOk(ms[i])) { i++; continue; }
     let j = i + 1; while (j < ms.length && empty(j) && cont(ms[j - 1], ms[j])) j++;
     if (j - i >= 2) out.set(i, j - i);
     i = j;

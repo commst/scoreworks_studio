@@ -16,8 +16,10 @@ const path = require('path');
     for (const f of files) {
       const t = Date.now();
       await pg.evaluate(() => { document.documentElement.dataset.drawn = '0'; });
-      await pg.setInputFiles('#file', f);
-      await pg.waitForFunction(() => +document.documentElement.dataset.drawn > 0 && !document.getElementById('btnPlay').disabled, null, { timeout: 60000 });
+      // 한글 파일 이름은 올리지 못해 영어 이름으로 복사
+      const tmp = '/tmp/smoke-' + Math.random().toString(36).slice(2, 8) + path.extname(f); require('fs').copyFileSync(f, tmp);
+      await pg.setInputFiles('#file', tmp);
+      await pg.waitForFunction(() => +document.documentElement.dataset.drawn > 0 && !document.getElementById('btnPlay').disabled, null, { timeout: 180000 });
       const info = await pg.evaluate(() => ({ drawnOk: document.documentElement.dataset.drawnOk === "true", drawn: +document.documentElement.dataset.drawn, measures: __studio.score.measures.length, parts: __studio.score.parts.length, insts: Object.values(__studio.lines).map(l => l.inst) }));
       const tDraw = Date.now() - t;
       await pg.click('#btnPlay');

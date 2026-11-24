@@ -1,6 +1,7 @@
 // ScoreWorks Studio — 첫 화면: MusicXML 열기 → .swc → 그리기(Verovio) → 국악기 녹음으로 재생
 import { parseMusicXml } from './io/musicxml-in.ts';
 import { unzipMxl } from './io/mxl.ts';
+import { parsePdf } from './io/pdf-in.ts';
 import { toMusicXml, multiRestGroups } from './io/musicxml-out.ts';
 import { engrave, type Engraved } from './view/engrave.ts';
 import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './play/player.ts';
@@ -16,6 +17,7 @@ const state = {
   score: null as Score | null, fileName: '', zoom: 100, eng: null as Engraved | null,
   lines: {} as Record<string, PlayLine>,
   rendered: null as null | { sig: string; plan: any; url: string },
+  warnings: [] as string[],
   measureEls: [] as Element[], elOf: [] as number[],   // 마디(0부터) → 화면 마디 요소 번호 (여러 마디 쉼표는 한 요소)
 };
 (window as any).__studio = state;   // 시험용
@@ -31,21 +33,42 @@ scoreEl.addEventListener('dragleave', () => scoreEl.classList.remove('drag'));
 scoreEl.addEventListener('drop', e => { e.preventDefault(); scoreEl.classList.remove('drag'); const f = e.dataTransfer?.files[0]; if (f) openFile(f); });
 
 async function openFile(f: File) {
-  if (!/\.(musicxml|xml|mxl)$/i.test(f.name)) { alert('지금은 MusicXML(.musicxml, .xml, .mxl)만 열 수 있습니다. PDF는 다음 단계에서 됩니다.'); return; }
+  if (/\.pdf$/i.test(f.name)) return openPdf(f);
+  if (!/\.(musicxml|xml|mxl)$/i.test(f.name)) { alert('PDF 또는 MusicXML(.musicxml, .xml, .mxl) 악보를 여세요.'); return; }
   status('여는 중…');
   try { await openXml(/\.mxl$/i.test(f.name) ? unzipMxl(await f.arrayBuffer()) : await f.text(), f.name); }
   catch (e: any) { console.error(e); status(''); alert('악보를 읽지 못했습니다: ' + (e && e.message || e)); }
 }
 
-export async function openXml(xml: string, name = '') {
-  const score = parseMusicXml(xml);
+// PDF: ScoreWorks 해석기로 읽어 .swc로 (pdf.js는 처음 PDF를 열 때 받음)
+let pdfjsP: Promise<any> | null = null;
+function pdfjs() {
+  if (!pdfjsP) pdfjsP = (async () => {
+    const [lib, w] = await Promise.all([import('pdfjs-dist/legacy/build/pdf.mjs'), import('pdfjs-dist/legacy/build/pdf.worker.mjs?url')]);
+    lib.GlobalWorkerOptions.workerSrc = (w as any).default;
+    return lib;
+  })();
+  return pdfjsP;
+}
+async function openPdf(f: File) {
+  status('PDF 여는 중…');
+  try {
+    const lib = await pdfjs();
+    const { score, warnings } = await parsePdf(lib, new Uint8Array(await f.arrayBuffer()), (m, x) => status(m + (x != null ? ` ${Math.round(x * 100)}%` : '') + '…'), f.name);
+    await openScore(score, f.name, warnings);
+  } catch (e: any) { console.error(e); status(''); alert('PDF 악보를 읽지 못했습니다: ' + (e && e.message || e)); }
+}
+
+export async function openXml(xml: string, name = '') { return openScore(parseMusicXml(xml), name, []); }
+
+async function openScore(score: Score, name: string, warnings: string[]) {
   document.documentElement.dataset.drawn = '0'; ($('btnPlay') as HTMLButtonElement).disabled = true;
   stop(); state.score = score; state.fileName = name.replace(/\.[^.]+$/, ''); state.rendered = null;
   state.lines = {};
   for (const p of score.parts) state.lines[p.id] = { inst: defaultInst(p), vol: 1, on: true, oct: 0 };
   const t0 = score.measures.find(m => m.tempo);
   if (t0 && t0.tempo) { $<HTMLInputElement>('bpm').value = String(t0.tempo.bpm); $<HTMLSelectElement>('unit').value = t0.tempo.unit; }
-  partsUi(); infoUi();
+  state.warnings = warnings; partsUi(); infoUi();
   await draw();
   for (const L of Object.values(state.lines)) for (const b of banksOf(L.inst)) loadBank(b);   // 녹음은 미리 받아 둔다
   ($('btnPlay') as HTMLButtonElement).disabled = false; ($('btnXml') as HTMLButtonElement).disabled = false;
@@ -97,7 +120,7 @@ function partsUi() {
 }
 function infoUi() {
   const m = state.score!.meta;
-  $('tab-info').innerHTML = `<dl class="info"><dt>제목</dt><dd>${esc(m.title || '(없음)')}</dd>${m.composer ? `<dt>작곡</dt><dd>${esc(m.composer)}</dd>` : ''}${m.arranger ? `<dt>편곡</dt><dd>${esc(m.arranger)}</dd>` : ''}<dt>마디</dt><dd>${state.score!.measures.length}</dd><dt>파일</dt><dd>${esc(state.fileName)}</dd></dl>`;
+  $('tab-info').innerHTML = `<dl class="info"><dt>제목</dt><dd>${esc(m.title || '(없음)')}</dd>${m.composer ? `<dt>작곡</dt><dd>${esc(m.composer)}</dd>` : ''}${m.arranger ? `<dt>편곡</dt><dd>${esc(m.arranger)}</dd>` : ''}<dt>마디</dt><dd>${state.score!.measures.length}</dd><dt>파일</dt><dd>${esc(state.fileName)}</dd>${state.warnings.length ? `<dt>해석 확인할 곳 ${state.warnings.length}</dt><dd class="warns">${state.warnings.slice(0, 200).map(w => `<div>${esc(w)}</div>`).join('')}</dd>` : ''}</dl>`;
 }
 function changed() { if (playing()) { stop(); } }
 
