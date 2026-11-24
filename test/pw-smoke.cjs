@@ -15,9 +15,10 @@ const path = require('path');
     await pg.goto('http://localhost:4319/');
     for (const f of files) {
       const t = Date.now();
+      await pg.evaluate(() => { document.documentElement.dataset.drawn = '0'; });
       await pg.setInputFiles('#file', f);
       await pg.waitForFunction(() => +document.documentElement.dataset.drawn > 0 && !document.getElementById('btnPlay').disabled, null, { timeout: 60000 });
-      const info = await pg.evaluate(() => ({ drawn: +document.documentElement.dataset.drawn, measures: __studio.score.measures.length, parts: __studio.score.parts.length, insts: Object.values(__studio.lines).map(l => l.inst) }));
+      const info = await pg.evaluate(() => ({ drawnOk: document.documentElement.dataset.drawnOk === "true", drawn: +document.documentElement.dataset.drawn, measures: __studio.score.measures.length, parts: __studio.score.parts.length, insts: Object.values(__studio.lines).map(l => l.inst) }));
       const tDraw = Date.now() - t;
       await pg.click('#btnPlay');
       await pg.waitForFunction(() => __studio.rendered && !document.getElementById('audio').paused, null, { timeout: 240000 });
@@ -25,7 +26,7 @@ const path = require('path');
       const pl = await pg.evaluate(() => ({ notes: __studio.rendered.plan.notes.length, total: __studio.rendered.plan.total, cur: document.getElementById('audio').currentTime, now: document.querySelectorAll('g.measure.now').length, banks: Object.keys(document.documentElement.dataset).filter(k => k.startsWith('bank')) }));
       await pg.screenshot({ path: `/tmp/studio-${path.basename(f)}.png` });
       await pg.click('#btnStop');
-      const ok = info.drawn === info.measures && pl.notes > 0 && pl.cur > 0.5 && pl.now === 1;
+      const ok = info.drawnOk && pl.notes > 0 && pl.cur > 0.5 && pl.now === 1;
       if (!ok) bad++;
       console.log(ok ? 'ok ' : 'BAD', path.basename(f), JSON.stringify({ ...info, tDraw, ...pl }));
     }

@@ -1,7 +1,7 @@
 # ScoreWorks Studio 인수인계 메모
 
 새 대화에서 이어 작업할 때 먼저 읽는 문서. 무엇을 왜 고쳤는지는 CHANGELOG.md, 구성·실행은 README.md, 결정 사항은 docs/DESIGN.md.
-(마지막 갱신: 2026-11-24, CHANGELOG 2번까지)
+(마지막 갱신: 2026-11-24, CHANGELOG 3번까지)
 
 ## 1. 작업 규칙 (사용자 요청 — ScoreWorks와 같음)
 
@@ -25,7 +25,7 @@
 
 ## 3. 다음 할 일 (1단계)
 
-1. ~~MusicXML 불러와 보기·재생 첫 화면~~ (2번). 남은 것: 따라가기 빨간 표시가 마디의 글자까지 칠함, 파트보에서 여러 마디 쉼표(MusicXML multiple-rest 쓰기), .mxl(압축) 열기
+1. ~~MusicXML 불러와 보기·재생 첫 화면~~ (2번). 따라가기 표시·여러 마디 쉼표·.mxl은 3번
 2. PDF 불러오기: ScoreWorks 해석기(analyzeLine) 결과 → .swc (음 이름은 해석기의 dia·조표로)
 3. 음 선택·수정(Verovio 음 ID ↔ .swc 사건), 되돌리기
 4. 자동 저장(IndexedDB)·.swc 파일 저장·GitHub 저장

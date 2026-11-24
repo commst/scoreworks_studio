@@ -37,8 +37,8 @@ input[type=number] { width: 64px; }
 .score .page svg { display: block; width: 100%; height: auto; }
 .score .empty { margin: 12vh auto; max-width: 460px; text-align: center; padding: 32px; border: 2px dashed var(--line); border-radius: 12px; background: #fff; }
 .score.drag .empty, .score.drag { outline: 3px dashed var(--c); outline-offset: -8px; }
-.score svg g.measure.now { fill: #c62828; }
-.score svg g.measure.now .staff > path, .score svg g.measure.now .barLine path { stroke: currentColor; }
+/* 따라가기: 그 마디의 음표·쉼표만 빨갛게 (셈여림·글자는 그대로) */
+.score svg g.measure.now .note, .score svg g.measure.now .rest, .score svg g.measure.now .mRest, .score svg g.measure.now .multiRest, .score svg g.measure.now .chord, .score svg g.measure.now .stem, .score svg g.measure.now .dots, .score svg g.measure.now .accid, .score svg g.measure.now .flag, .score svg g.measure.now .beam, .score svg g.measure.now .tuplet, .score svg g.measure.now .tie, .score svg g.measure.now .slur { fill: #c62828; color: #c62828; }
 
 .transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: #fff; border-top: 1px solid var(--line); }
 .transport label { display: flex; align-items: center; gap: 4px; }

@@ -1,6 +1,7 @@
 // ScoreWorks Studio — 첫 화면: MusicXML 열기 → .swc → 그리기(Verovio) → 국악기 녹음으로 재생
 import { parseMusicXml } from './io/musicxml-in.ts';
-import { toMusicXml } from './io/musicxml-out.ts';
+import { unzipMxl } from './io/mxl.ts';
+import { toMusicXml, multiRestGroups } from './io/musicxml-out.ts';
 import { engrave, type Engraved } from './view/engrave.ts';
 import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './play/player.ts';
 // @ts-ignore
@@ -15,7 +16,7 @@ const state = {
   score: null as Score | null, fileName: '', zoom: 100, eng: null as Engraved | null,
   lines: {} as Record<string, PlayLine>,
   rendered: null as null | { sig: string; plan: any; url: string },
-  measureEls: [] as Element[],
+  measureEls: [] as Element[], elOf: [] as number[],   // 마디(0부터) → 화면 마디 요소 번호 (여러 마디 쉼표는 한 요소)
 };
 (window as any).__studio = state;   // 시험용
 
@@ -30,9 +31,9 @@ scoreEl.addEventListener('dragleave', () => scoreEl.classList.remove('drag'));
 scoreEl.addEventListener('drop', e => { e.preventDefault(); scoreEl.classList.remove('drag'); const f = e.dataTransfer?.files[0]; if (f) openFile(f); });
 
 async function openFile(f: File) {
-  if (!/\.(musicxml|xml)$/i.test(f.name)) { alert('지금은 MusicXML(.musicxml, .xml)만 열 수 있습니다. PDF는 다음 단계에서 됩니다.'); return; }
+  if (!/\.(musicxml|xml|mxl)$/i.test(f.name)) { alert('지금은 MusicXML(.musicxml, .xml, .mxl)만 열 수 있습니다. PDF는 다음 단계에서 됩니다.'); return; }
   status('여는 중…');
-  try { openXml(await f.text(), f.name); }
+  try { await openXml(/\.mxl$/i.test(f.name) ? unzipMxl(await f.arrayBuffer()) : await f.text(), f.name); }
   catch (e: any) { console.error(e); status(''); alert('악보를 읽지 못했습니다: ' + (e && e.message || e)); }
 }
 
@@ -57,12 +58,16 @@ async function draw() {
   status('악보 그리는 중…');
   const t = performance.now();
   const w = scoreEl.clientWidth - 32;
-  state.eng = await engrave(toMusicXml(state.score), { width: w, zoom: state.zoom });
+  // 파트보(파트 하나)는 쉬는 마디들을 여러 마디 쉼표로 묶어 그린다(피날레 파트보처럼)
+  const mr = state.score.parts.length === 1 ? multiRestGroups(state.score) : new Map<number, number>();
+  state.elOf = []; for (let i = 0, k = 0; i < state.score.measures.length;) { const n = mr.get(i) || 1; for (let j = 0; j < n; j++) state.elOf[i + j] = k; i += n; k++; }
+  state.eng = await engrave(toMusicXml(state.score, { multiRest: mr.size > 0 }), { width: w, zoom: state.zoom });
   scoreEl.innerHTML = '';
   for (let p = 1; p <= state.eng.pages; p++) { const d = document.createElement('div'); d.className = 'page'; d.innerHTML = state.eng.svg(p); scoreEl.appendChild(d); }
   state.measureEls = Array.from(scoreEl.querySelectorAll('g.measure'));
   status(`${state.score.measures.length}마디 · ${state.score.parts.length}파트 · ${((performance.now() - t) / 1000).toFixed(1)}초`);
   document.documentElement.dataset.drawn = String(state.measureEls.length);
+  document.documentElement.dataset.drawnOk = String(state.measureEls.length === (state.elOf.length ? state.elOf[state.elOf.length - 1] + 1 : 0));
 }
 let resizeT = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = window.setTimeout(draw, 300); });
@@ -130,9 +135,9 @@ function setPlayBtn() { $('btnPlay').textContent = playing() ? '❚❚ 멈춤' :
 let cur = -1;
 function mark(i: number) {
   if (i === cur) return;
-  if (cur >= 0 && state.measureEls[cur]) state.measureEls[cur].classList.remove('now');
+  if (cur >= 0 && state.measureEls[state.elOf[cur]]) state.measureEls[state.elOf[cur]].classList.remove('now');
   cur = i;
-  const el = i >= 0 ? state.measureEls[i] : null;
+  const el = i >= 0 ? state.measureEls[state.elOf[i]] : null;
   if (!el) return;
   el.classList.add('now');
   const r = el.getBoundingClientRect(), s = scoreEl.getBoundingClientRect();

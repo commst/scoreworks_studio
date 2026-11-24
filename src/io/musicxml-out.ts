@@ -25,7 +25,26 @@ function divisionsOf(score: Score): number {
   return Math.min(L, 1 << 20);
 }
 
-export function toMusicXml(score: Score): string {
+// 여러 마디 쉼표로 묶을 수 있는 구간: 시작 마디 번호(0부터) → 마디 수(2 이상).
+// 모든 파트가 온쉼표이고, 사이에 박자·조·빠르기·연습 번호·도돌이·마디선·줄바꿈 같은 표시가 없을 때만
+export function multiRestGroups(score: Score): Map<number, number> {
+  const out = new Map<number, number>();
+  const empty = (mi: number) => score.parts.every(p => { const pm = p.measures[mi]; return !pm || (!(pm.dirs && pm.dirs.length) && pm.events.every(e => e.rest || e.hidden)); });
+  const startOk = (M: MeasureInfo) => !(M.ending || M.repeatStart || M.segno || M.coda || (M.words && M.words.length));
+  const cont = (P: MeasureInfo, M: MeasureInfo) => startOk(M) && !(M.time || (M.key != null && M.key !== P.key) || M.tempo || M.rehearsal || M.pageBreak || M.systemBreak || M.jangdan)
+    && !(P.barline || P.repeatEnd || P.endingStop);
+  const ms = score.measures;
+  for (let i = 0; i < ms.length;) {
+    if (!empty(i) || !startOk(ms[i]) || ms[i].tempo && i === 0) { i++; continue; }
+    let j = i + 1; while (j < ms.length && empty(j) && cont(ms[j - 1], ms[j])) j++;
+    if (j - i >= 2) out.set(i, j - i);
+    i = j;
+  }
+  return out;
+}
+
+export function toMusicXml(score: Score, opts: { multiRest?: boolean } = {}): string {
+  const mr = opts.multiRest ? multiRestGroups(score) : null;
   const D = divisionsOf(score), dv = (f: Frac) => Math.round((f[0] * 4 * D) / f[1]);
   const o: string[] = [];
   o.push('<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
@@ -60,6 +79,7 @@ export function toMusicXml(score: Score): string {
         p.clefs.slice(0, p.staves).forEach((c, i) => at.push(clefXml(c, p.staves > 1 ? i + 1 : 0)));
         if (p.transpose && (p.transpose.octave || p.transpose.chromatic)) at.push(`<transpose>${p.transpose.diatonic != null ? `<diatonic>${p.transpose.diatonic}</diatonic>` : ''}<chromatic>${p.transpose.chromatic || 0}</chromatic>${p.transpose.octave ? `<octave-change>${p.transpose.octave}</octave-change>` : ''}</transpose>`);
       }
+      if (mr && mr.has(mi)) at.push(`<measure-style><multiple-rest>${mr.get(mi)}</multiple-rest></measure-style>`);
       if (at.length) o.push('<attributes>' + at.join('') + '</attributes>');
       if (p === score.parts[0]) o.push(...measureDirs(M, dv));
       o.push(...measureBody(p, mi, M, dv));
