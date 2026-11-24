@@ -23,6 +23,7 @@ export async function engrave(xml: string, o: EngraveOpts): Promise<Engraved> {
     pageHeight: 60000, adjustPageHeight: true,   // 화면에서는 한 쪽을 길게(넘기지 않고 내려 보기). 인쇄용 쪽 나누기는 따로
     pageMarginTop: o.first === false ? 10 : 60, pageMarginBottom: 10, pageMarginLeft: 50, pageMarginRight: 50,
     breaks: 'auto', header: o.first === false ? 'none' : 'auto', footer: 'none',
+    condense: 'none',   // 쉬는 파트도 늘 그림(단마다 오선 수·왼쪽 여백이 같게)
     mnumInterval: 1,   // 마디 번호를 모든 마디에 (합주 연습에서 마디를 찾기 쉽게)
     svgViewBox: true, svgHtml5: true, svgRemoveXlink: true,
     justificationMaxVertical: 0,

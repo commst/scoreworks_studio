@@ -59,7 +59,9 @@ export function toMusicXml(score: Score, opts: { multiRest?: boolean; ids?: bool
   let g = '', gn = 0;
   score.parts.forEach(p => {
     if ((p.group || '') !== g) { if (g) o.push(`<part-group type="stop" number="${gn}"/>`); g = p.group || ''; if (g) o.push(`<part-group type="start" number="${++gn}"><group-symbol>bracket</group-symbol><group-barline>yes</group-barline></part-group>`); }
-    o.push(`<score-part id="${esc(p.id)}"><part-name>${esc(p.name)}</part-name>${p.abbr ? `<part-abbreviation>${esc(p.abbr)}</part-abbreviation>` : ''}</score-part>`);
+    // 둘째 단부터는 줄임 이름(없으면 이름, 길면 앞 5자). 조각으로 그릴 때(from > 0)는 첫 단도 줄임 이름 — 단마다 왼쪽 여백이 같게
+    const ab = p.abbr || (p.name.length <= 6 ? p.name : p.name.slice(0, 5) + '.');
+    o.push(`<score-part id="${esc(p.id)}"><part-name>${esc(opts.from ? ab : p.name)}</part-name><part-abbreviation>${esc(ab)}</part-abbreviation></score-part>`);
   });
   if (g) o.push(`<part-group type="stop" number="${gn}"/>`);
   o.push('</part-list>');
@@ -78,8 +80,9 @@ export function toMusicXml(score: Score, opts: { multiRest?: boolean; ids?: bool
       if (M.repeatStart || M.ending) o.push(`<barline location="left">${M.repeatStart ? '<bar-style>heavy-light</bar-style>' : ''}${M.ending ? `<ending number="${esc(M.ending.num)}" type="start"/>` : ''}${M.repeatStart ? '<repeat direction="forward"/>' : ''}</barline>`);
       const at: string[] = [];
       if (first) at.push(`<divisions>${D}</divisions>`);
-      if (M.key != null && (M.key !== key || first)) { at.push(`<key><fifths>${M.key}</fifths>${M.mode ? `<mode>${esc(M.mode)}</mode>` : ''}</key>`); key = M.key; }
-      else if (first) { at.push(`<key><fifths>${key || 0}</fifths></key>`); key = key || 0; }
+      const kp = p.kind === 'perc' ? ' print-object="no"' : '';   // 타악 오선에는 조표를 그리지 않음
+      if (M.key != null && (M.key !== key || first)) { at.push(`<key${kp}><fifths>${M.key}</fifths>${M.mode ? `<mode>${esc(M.mode)}</mode>` : ''}</key>`); key = M.key; }
+      else if (first) { at.push(`<key${kp}><fifths>${key || 0}</fifths></key>`); key = key || 0; }
       if (M.time) at.push(`<time${M.timeShow === false ? ' print-object="no"' : ''}><beats>${M.time[0]}</beats><beat-type>${M.time[1]}</beat-type></time>`);
       else if (first && time) at.push(`<time print-object="no"><beats>${time[0]}</beats><beat-type>${time[1]}</beat-type></time>`);
       if (first) {
