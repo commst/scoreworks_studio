@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ScoreWorks Studio 사용설명서</title>
+<style>
+@page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+:root { --ink: #1e2433; --muted: #5b6476; --accent: #3d5a99; --soft: #e9eef8; --line: #d5dbec; --warn: #fff3cf; --tip: #e1f0e5; }
+* { box-sizing: border-box; }
+/* 글꼴: Pretendard(본문)·Outfit(이름). PDF 만들 때 fonts/ 폴더(mkpdf.cjs가 복사), 없으면 설치된 Noto Sans CJK */
+@font-face { font-family: "Pretendard Variable"; font-weight: 45 920; src: url(fonts/PretendardVariable.woff2) format("woff2"); }
+@font-face { font-family: "Outfit"; font-weight: 100 900; src: url(fonts/outfit-latin-wght-normal.woff2) format("woff2"); }
+html { font-family: "Pretendard Variable", Pretendard, "Noto Sans CJK KR", "Noto Sans KR", sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.68; word-break: keep-all; overflow-wrap: break-word; }
+body { margin: 0; }
+h1, h2, h3, h4 { line-height: 1.3; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 19pt; color: var(--accent); margin: 0 0 10pt; padding-bottom: 6pt; border-bottom: 2px solid var(--accent); break-before: page; }
+h3 { font-size: 13.5pt; margin: 16pt 0 6pt; break-after: avoid; }
+p { margin: 0 0 7pt; }
+ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+li { margin: 2pt 0; }
+.btn { display: inline-block; padding: 0 6pt; border: 1px solid var(--line); border-radius: 4pt; background: #fff; font-size: 9.5pt; font-weight: 600; white-space: nowrap; line-height: 1.6; }
+.btn.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab { display: inline-block; padding: 0 6pt; border-bottom: 2px solid var(--accent); color: var(--accent); font-weight: 700; font-size: 9.5pt; }
+.kbd { display: inline-block; padding: 0 4pt; border: 1px solid #b7bfd3; border-bottom-width: 2px; border-radius: 3pt; font-size: 9pt; background: #fff; }
+figure { margin: 8pt 0 12pt; text-align: center; break-inside: avoid; }
+figure img { max-width: 100%; max-height: 150mm; object-fit: contain; border: 1px solid var(--line); border-radius: 6pt; }
+figure.half img { max-width: 58%; }
+figcaption { font-size: 9pt; color: var(--muted); margin-top: 3pt; }
+.box { border-radius: 6pt; padding: 7pt 10pt; margin: 8pt 0 10pt; break-inside: avoid; }
+.box > :last-child { margin-bottom: 0; }
+.ex { background: var(--soft); border-left: 4px solid var(--accent); }
+.tip { background: var(--tip); border-left: 4px solid #3f9a62; }
+.warn { background: var(--warn); border-left: 4px solid #d8a400; }
+.box .t { font-weight: 700; }
+ol.steps { list-style: none; padding: 0; counter-reset: st; }
+ol.steps > li { counter-increment: st; position: relative; padding: 4pt 0 4pt 30pt; margin: 4pt 0; break-inside: avoid; }
+ol.steps > li::before { content: counter(st); position: absolute; left: 0; top: 4pt; width: 21pt; height: 21pt; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; text-align: center; line-height: 21pt; font-size: 10pt; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9.6pt; break-inside: avoid; }
+th, td { border: 1px solid var(--line); padding: 4pt 6pt; text-align: left; vertical-align: top; }
+th { background: var(--soft); font-weight: 700; }
+.cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #dde5fb 0%, #ebe3f8 55%, #f7e3ec 100%); border-radius: 10mm; }
+.cover .mark { width: 30mm; height: 30mm; filter: drop-shadow(0 3mm 6mm rgba(61, 90, 153, .28)); }
+.cover h1 { margin-top: 8mm; font: 800 46pt/1 "Outfit", sans-serif; letter-spacing: -1.5pt; color: #2e3a6b; }
+.cover h1 b { background: linear-gradient(100deg, #3d5a99, #6b5bd2 55%, #d4688f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cover .studio { display: inline-block; margin-top: 4mm; padding: 2mm 5mm; border-radius: 99px; background: #e1e8f8; color: #3d5a99; font: 700 15pt "Outfit", sans-serif; }
+.cover .tag { margin-top: 6mm; font-size: 13.5pt; font-weight: 600; letter-spacing: .06em; color: #44506a; }
+.cover .sub { font-size: 15pt; font-weight: 700; color: #2e3a6b; margin-top: 12mm; }
+.cover .lede { margin: 8mm auto 0; max-width: 140mm; font-size: 11pt; color: #44506a; }
+.cover .meta { margin-top: 26pt; font-size: 10pt; color: var(--muted); }
+.toc { columns: 2; column-gap: 12mm; font-size: 10.5pt; }
+.toc div { break-inside: avoid; padding: 2pt 0; }
+.toc .n { display: inline-block; width: 18pt; color: var(--accent); font-weight: 700; }
+.toc .s { padding-left: 18pt; font-size: 9.5pt; color: var(--muted); }
+.small { font-size: 9pt; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3d5a99"/><stop offset=".55" stop-color="#6b5bd2"/><stop offset="1" stop-color="#d4688f"/></linearGradient></defs><rect width="48" height="48" rx="13" fill="url(#g)"/><path d="M6 30c4-7 8-7 12 0s8 7 12 0 8-7 12 0" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="19" cy="31" rx="5.2" ry="3.9" transform="rotate(-22 19 31)" fill="#fff"/><path d="M23.6 30V11c5 1.4 8.4 4.4 8 10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <h1>Score<b>Works</b></h1>
+  <div class="studio">Studio</div>
+  <div class="tag">국악관현악 작곡 · 악보 편집</div>
+  <div class="sub">사용설명서 · 처음부터 따라 하기</div>
+  <p class="lede">악보 PDF나 MusicXML을 열어 오선보로 보고, 국악기 녹음으로 들으며 음을 고치고 넣습니다. 율명·구음을 붙여 보거나 정간보로 바꿔 볼 수 있고, 고친 악보는 피날레·뮤즈스코어에서 여는 MusicXML로 저장합니다.</p>
+  <div class="meta">웹 주소: commst.github.io/scoreworks_studio<br>2026년 11월 판 · 그림의 악보는 이 설명서를 위해 만든 예시곡입니다</div>
+</section>
+
+<h2>차례</h2>
+<div class="toc">
+  <div><span class="n">1</span>시작하기 전에</div><div class="s">할 수 있는 일 · 여는 방법 · ScoreWorks와 다른 점</div>
+  <div><span class="n">2</span>화면 둘러보기</div><div class="s">위 막대 · 편집 막대 · 왼쪽 칸 · 연주 막대</div>
+  <div><span class="n">3</span>악보 열기</div><div class="s">PDF · MusicXML · .swc · 이어서 열기</div>
+  <div><span class="n">4</span>듣기</div><div class="s">재생 · 따라가기 · 빠르기와 속도 · 파트 소리</div>
+  <div><span class="n">5</span>음 고치기</div><div class="s">고르기 · 높이 · 길이 · 지우기 · 되돌리기</div>
+  <div><span class="n">6</span>음 넣기와 옮기기</div><div class="s">음표판 · 넣기 상태 · 끌어 옮기기 · 성부 · 화음 · 마디</div>
+  <div><span class="n">7</span>율명 · 구음 보기</div><div class="s">율명 · 황종 기준 · 장구 구음 · 구음 적기</div>
+  <div><span class="n">8</span>정간보 보기</div><div class="s">선율 파트 · 장구 정간보</div>
+  <div><span class="n">9</span>저장하기</div><div class="s">자동 저장 · .swc · MusicXML</div>
+  <div><span class="n">10</span>단축키와 알아 둘 점</div><div class="s">단축키 표 · 사용법 · 업데이트 이력</div>
+</div>
+
+<h2>1. 시작하기 전에</h2>
+<h3>할 수 있는 일</h3>
+<ul>
+  <li><b>악보 열기</b>: 악보 PDF(피날레 등에서 만든 것), MusicXML, 이 프로그램에서 저장한 .swc</li>
+  <li><b>듣기</b>: 가야금·대금·해금·아쟁·피리·장구 등 직접 녹음한 국악기 소리로 연주하며, 지금 마디를 따라감</li>
+  <li><b>고치기 · 넣기</b>: 음을 눌러 높이와 길이를 바꾸고, 음표를 끌어다 놓아 새 음을 넣고, 마디를 넣거나 지움</li>
+  <li><b>율명 · 구음 · 정간보</b>: 오선보 아래 율명·구음을 붙이거나, 파트 하나를 정간보로 바꿔 봄</li>
+  <li><b>저장</b>: 고친 악보를 피날레·뮤즈스코어에서 여는 MusicXML로, 이 프로그램 파일(.swc)로</li>
+</ul>
+<h3>여는 방법</h3>
+<p>컴퓨터·아이패드의 크롬·엣지·사파리·삼성 인터넷에서 <b>commst.github.io/scoreworks_studio</b> 를 엽니다. 설치할 것은 없습니다. 처음 여는 악보는 악보 그리는 프로그램과 국악기 녹음을 받느라 몇 초 걸립니다.</p>
+<div class="box ex"><p><span class="t">ScoreWorks와 무엇이 다른가요?</span> ScoreWorks는 악보 PDF를 읽어 <b>연습용으로 들려주는</b> 도구이고, Studio는 악보를 <b>고치고 새로 쓰는</b> 도구입니다. PDF 해석기와 국악기 녹음은 둘이 같아서, 같은 악보는 같은 소리로 들립니다.</p></div>
+
+<h2>2. 화면 둘러보기</h2>
+<figure><img src="img/02_main.png"><figcaption>악보를 연 화면 — 위 막대, 편집 막대, 왼쪽 칸, 가운데 악보, 아래 연주 막대</figcaption></figure>
+<table>
+  <tr><th style="width:24%">자리</th><th>하는 일</th></tr>
+  <tr><td>위 막대</td><td>왼쪽 곡 이름(누르면 악보 열기), 가운데 이름, 오른쪽 <span class="btn pri">악보 열기</span> <span class="btn">저장</span> <span class="btn">MusicXML</span> <span class="btn">이력</span> <span class="btn">사용법</span> <span class="btn">설명서</span></td></tr>
+  <tr><td>편집 막대</td><td>되돌리기·다시, 높이, 음표판, 점, 성부, 화음, 지우기, 구음 칸, 마디, 고른 음 안내, 보기 방식(오선·율명·구음·정간보), 보기(총보·파트 하나), 크기</td></tr>
+  <tr><td>왼쪽 칸</td><td><span class="tab">파트</span> 소리·글자·크기 · <span class="tab">곡 정보</span> 제목·마디 수·해석을 확인할 곳 · <span class="tab">율명</span> 황종 기준 등 · <span class="tab">단축키</span></td></tr>
+  <tr><td>연주 막대</td><td>정지·재생, 지금 마디와 시간, 진행 막대, 빠르기, 속도, 도돌이</td></tr>
+</table>
+<figure><img src="img/04_ribbon.png"><figcaption>편집 막대 — 아이패드처럼 화면이 좁으면 두 줄로 나뉩니다</figcaption></figure>
+<p class="small">화면이 좁으면 위 막대 단추는 아이콘이나 짧은 이름(이력·사용법·설명서)으로 바뀌고, 휴대폰 폭에서는 왼쪽 칸을 숨깁니다.</p>
+
+<h2>3. 악보 열기</h2>
+<ol class="steps">
+  <li>위 막대의 <span class="btn pri">악보 열기</span>를 누르거나, 악보 파일을 화면 가운데로 끌어다 놓습니다.</li>
+  <li>열 수 있는 파일: <b>PDF</b>(피날레·시벨리우스 등에서 만든 악보), <b>MusicXML</b>(.musicxml · .xml · 압축된 .mxl), <b>.swc</b>(이 프로그램에서 저장한 것).</li>
+  <li>큰 총보는 위에서부터 차례로 그려집니다. 다 그려지기 전에도 재생·저장할 수 있습니다.</li>
+</ol>
+<figure class="half"><img src="img/01_start.png"><figcaption>첫 화면 — 지난번에 고치던 악보가 있으면 '이어서 열기'가 함께 나옵니다</figcaption></figure>
+<div class="box warn"><p><span class="t">PDF에서 알아 둘 점</span> PDF는 ScoreWorks와 같은 해석기로 읽습니다. 스캔하거나 사진으로 만든 PDF는 읽지 못합니다. 드물게 음이나 박을 잘못 읽은 곳은 왼쪽 <span class="tab">곡 정보</span>의 '해석을 확인할 곳'에 마디 번호와 함께 나오니, 그 마디를 보고 고치세요.</p></div>
+<p>가야금처럼 두 오선(윗줄·아랫줄)으로 된 악기는 한 파트로 합쳐 보여 줍니다. 파트 하나만 볼 때는 쉬는 마디가 이어지면 여러 마디 쉼표로 묶어 보여 줍니다.</p>
+
+<h2>4. 듣기</h2>
+<figure><img src="img/08_play.png"><figcaption>재생 중 — 지금 마디의 음이 주홍색으로 바뀌고 화면이 따라갑니다</figcaption></figure>
+<ul>
+  <li><b>재생 · 멈춤</b>: 연주 막대의 노란 ▶ 단추 또는 <span class="kbd">Space</span>. ■는 처음으로 돌아갑니다.</li>
+  <li><b>옮기기</b>: 진행 막대를 누르면 그 자리부터 듣습니다.</li>
+  <li><b>빠르기</b>: 악보에 적힌 빠르기 표시를 먼저 따르고, 없으면 연주 막대의 빠르기(♩ = 숫자)를 씁니다.</li>
+  <li><b>속도</b>: −/+로 10%씩(30~200%). 천천히 연습할 때 씁니다.</li>
+  <li><b>도돌이</b>: 켜면 도돌이표·1·2번 괄호·D.C.를 따라 연주합니다.</li>
+</ul>
+<figure class="half"><img src="img/07_parts.png"><figcaption><span class="tab">파트</span> 칸 — 왼쪽 색 띠는 악기 갈래(관악·찰현·발현·타악)</figcaption></figure>
+<p>파트마다 <b>스위치</b>로 소리를 켜고 끄며, 악기 소리와 <b>크기</b>(0~200%)를 고릅니다. 악기 소리는 파트 이름으로 미리 골라 둡니다(대금 → 대금 녹음, 장구 → 장구 소리).</p>
+<div class="box tip"><p><span class="t">이렇게 써 보세요</span> 내 파트만 끄고 나머지를 켜면 반주에 맞춰 연습할 수 있고, 내 파트 크기를 150%로 올리면 내 소리가 잘 들립니다.</p></div>
+
+<h2>5. 음 고치기</h2>
+<figure><img src="img/05_select.png"><figcaption>음을 누르면 파랗게 고르고, 편집 막대에 파트·마디·음 이름·길이가 나옵니다</figcaption></figure>
+<ol class="steps">
+  <li><b>고르기</b>: 음이나 쉼표를 누릅니다. 화음은 한 번 더 누르면 그 음 하나만 고릅니다. 음 바로 옆을 눌러도 가장 가까운 음이 잡힙니다.</li>
+  <li><b>높이</b>: <span class="kbd">↑</span> <span class="kbd">↓</span> 반음, <span class="kbd">Ctrl</span>+<span class="kbd">↑</span><span class="kbd">↓</span> 옥타브, <span class="kbd">C</span>~<span class="kbd">B</span> 그 음으로(가장 가까운 옥타브, 조표 따름). 붙임줄로 이어진 뒤 음도 함께 바뀝니다.</li>
+  <li><b>길이</b>: 음표판의 음표 단추 또는 <span class="kbd">1</span>~<span class="kbd">7</span>(64분~온음표), <span class="kbd">.</span> 점. 길어지면 뒤 음을 덮고, 짧아지면 쉼표로 채웁니다.</li>
+  <li><b>지우기</b>: 휴지통 단추 또는 <span class="kbd">Delete</span> — 그 자리는 쉼표가 됩니다(화음에서 한 음만 골랐으면 그 음만 빠짐).</li>
+  <li><b>옮겨 다니기</b>: <span class="kbd">←</span> <span class="kbd">→</span> 앞뒤 음, <span class="kbd">Esc</span> 선택 풀기.</li>
+  <li><b>되돌리기</b>: <span class="kbd">Ctrl</span>+<span class="kbd">Z</span>, 다시 <span class="kbd">Ctrl</span>+<span class="kbd">Y</span>(편집 막대 맨 왼쪽 단추도 같음).</li>
+</ol>
+<div class="box ex"><p><span class="t">고치면</span> 쉼표·붙임줄·잇단음표·빔을 그 마디에 맞게 다시 정리하고, 임시표는 조표와 마디 앞 음을 보고 붙입니다. 고친 마디가 든 부분만 다시 그려서 큰 총보도 빠릅니다. '보기'에서 파트 하나만 보면 더 빠릅니다.</p></div>
+
+<h2>6. 음 넣기와 옮기기</h2>
+<figure><img src="img/06_drag.png"><figcaption>음표판에서 8분음표를 끌어 오는 중 — 놓을 자리에 파란 음 머리와 '음 이름 · 마디 · 박'이 보입니다</figcaption></figure>
+<h3>음표판에서 끌어 넣기</h3>
+<p>편집 막대 <b>음표</b>판(온음표·2분·4분·8분·16분·32분음표·쉼표)의 단추를 끌어다 악보에 놓으면 그 자리에 새 음이 들어갑니다. 자리는 8분음표 단위(더 짧은 음은 그 길이 단위)로 맞춰지고, 그 자리에서 시작하던 음은 지워지며 앞에서 걸쳐 오던 음은 새 음 앞에서 잘립니다.</p>
+<h3>넣기 상태 (아이패드에 편함)</h3>
+<ol class="steps">
+  <li>아무 음도 고르지 않은 채 음표 단추를 누릅니다 — 안내 칸이 노랗게 바뀝니다.</li>
+  <li>악보를 누르는 곳마다 그 음이 들어갑니다(마우스는 놓일 자리를 미리 보여 줌). <b>점</b>을 켜면 점음표.</li>
+  <li><span class="kbd">Esc</span> 또는 같은 음표 단추를 다시 눌러 끝냅니다.</li>
+</ol>
+<h3>끌어 옮기기 · 끌어 지우기</h3>
+<ul>
+  <li>음을 <b>위아래로</b> 끌면 한 칸(온음)씩 높이가 바뀝니다(조표 따름, 화음은 함께).</li>
+  <li><b>옆이나 다른 마디·오선으로</b> 끌면 그 자리로 옮기고, 원래 자리는 쉼표가 됩니다(같은 파트 안).</li>
+  <li><b>악보 밖</b>(왼쪽 칸 등)으로 끌어 놓으면 지웁니다 — 끄는 동안 '놓으면 지웁니다'가 보입니다.</li>
+</ul>
+<h3>성부 · 화음 · 마디</h3>
+<table>
+  <tr><th style="width:22%">단추</th><th>하는 일</th></tr>
+  <tr><td>성부 1 · 2</td><td>새 음을 넣을 성부. 2를 고르면 첫 성부 음은 그대로 두고 둘째 성부(꼬리 아래)에 넣습니다.</td></tr>
+  <tr><td>화음</td><td>켜면 넣는 음을 그 자리 음에 화음으로 더합니다. <span class="kbd">Shift</span>를 누른 채 놓아도 같습니다. 고른 음에서 <span class="kbd">Shift</span>+<span class="kbd">C</span>~<span class="kbd">B</span>는 맨 위 음 위로 그 음을 더합니다.</td></tr>
+  <tr><td>마디 앞에 + / 뒤에 +</td><td>고른 음이 있는 마디 앞·뒤에 빈 마디(그 자리 박자, 모든 파트 온쉼표)를 넣습니다.</td></tr>
+  <tr><td>마디 지우기</td><td>고른 음이 있는 마디를 모든 파트에서 지웁니다. 그 마디에서 박자·조·빠르기가 바뀌었다면 다음 마디로 넘겨 줍니다.</td></tr>
+</table>
+<div class="box warn"><p>마디를 넣거나 지우면 마디 번호를 처음부터 차례로 다시 매깁니다.</p></div>
+
+<h2>7. 율명 · 구음 보기</h2>
+<figure><img src="img/10_yul.png"><figcaption>율명·구음 보기 — 대금·가야금은 율명, 장구는 구음(덩·덕·쿵·기덕)</figcaption></figure>
+<p>편집 막대 오른쪽의 <b>율명·구음</b>을 고르면 오선 아래에 글자가 붙습니다. 파트마다 <span class="tab">파트</span> 칸의 '아래 글자'에서 <b>율명 · 구음 · 없음</b>을 고릅니다. 기본은 선율 악기 = 율명, 장구 = 구음입니다.</p>
+<h3>율명</h3>
+<p>소리 나는 높이를 12율(황·대·태·협·고·중·유·임·이·남·무·응)로 적고, 옥타브는 <b>하배 · 배 · (가운데) · 청 · 중청</b>으로 붙입니다. 화음은 높은 음이 위, 붙임줄로 이어진 뒤 음은 빼고 적습니다.</p>
+<figure class="half"><img src="img/11_yul_tab.png"><figcaption><span class="tab">율명</span> 칸 — 황종 기준, 한글·한자, 가야금 종류, 정간 단위</figcaption></figure>
+<div class="box ex"><p><span class="t">황종 기준</span> 기본은 정악(향악) 기준인 E♭4입니다. 아악·당악 계통은 C에 가깝고, 곡이나 단체마다 다를 수 있으니 <span class="tab">율명</span> 칸에서 맞춰 고르세요(C4 · D4 · E♭4 · F4 · A♭4 · B♭4).</p></div>
+<h3>장구 구음</h3>
+<p>같은 시각에 친 것을 묶어 붙입니다 — 채편과 북편을 함께 = <b>덩</b>, 채편 = <b>덕</b>, 북편 = <b>쿵</b>, 꾸밈음 + 채편 = <b>기덕</b>, 채편 트레몰로 = <b>더러러러</b>. 첫 성부(또는 위쪽 줄)를 채편, 둘째 성부(아래쪽 줄)를 북편으로 봅니다.</p>
+<h3>구음 적기 (거문고 · 피리 · 25현 가야금 등)</h3>
+<figure><img src="img/12_gueum.png"><figcaption>대금 파트의 아래 글자를 '구음'으로 바꾸고 구음 칸에 적는 중</figcaption></figure>
+<ol class="steps">
+  <li>그 파트의 '아래 글자'를 <b>구음</b>으로 바꿉니다.</li>
+  <li>첫 음을 누르고 편집 막대 <b>구음</b> 칸에 적은 뒤 <span class="kbd">Enter</span> — 다음 음으로 넘어가므로 이어서 적습니다.</li>
+  <li>빈 칸에서 <span class="kbd">Enter</span>는 그 음의 구음 지우기, <span class="kbd">Esc</span>는 그만. 되돌리기도 됩니다.</li>
+</ol>
+<p class="small">거문고·피리의 구음은 같은 높이라도 줄·괘·가락에 따라 달라져 자동으로 붙이지 않습니다. 적은 구음은 MusicXML에 가사로 저장되어 피날레에서도 음 아래 글자로 보입니다. 산조가야금 12현을 쓰는 곡은 <span class="tab">율명</span> 칸에서 가야금을 '산조가야금 12현'으로 바꾸면 줄 구음(청·흥·둥·당·동·징·땅·지·찡·칭·쫑·쨍)이 자동으로 붙습니다.</p>
+
+<h2>8. 정간보 보기</h2>
+<figure><img src="img/13_jg.png"><figcaption>대금 파트를 정간보로 — 오른쪽에서 왼쪽, 위에서 아래로 읽습니다</figcaption></figure>
+<ul>
+  <li>편집 막대의 <b>정간보</b>를 고르고, '보기'에서 파트를 고릅니다(총보면 첫 선율 파트).</li>
+  <li>한 행 = 한 마디, 정간 하나 = 박자표 분모의 음(4/4 → ♩, 12/8 → ♪). <span class="tab">율명</span> 칸에서 ♩·♪·2분으로 바꿀 수 있습니다.</li>
+  <li>정간 안에서 음이 여럿 시작하면 칸을 나누고, 음이 이어지는 칸은 비우며, 쉼표는 △입니다.</li>
+  <li>큰보표 악기(가야금 등)는 <span class="tab">율명</span> 칸에서 윗줄·아랫줄을 고릅니다.</li>
+  <li>재생하면 지금 행이 노랗게 따라갑니다. 정간보에서는 고칠 수 없습니다 — 고치려면 '오선'이나 '율명·구음'으로 돌아갑니다.</li>
+</ul>
+<figure><img src="img/14_jg_janggu.png"><figcaption>장구 정간보 — 정간마다 덩·덕·쿵</figcaption></figure>
+
+<h2>9. 저장하기</h2>
+<table>
+  <tr><th style="width:24%">방법</th><th>무엇이 저장되나</th></tr>
+  <tr><td>자동 저장</td><td>열거나 고칠 때마다 이 브라우저에 저장. 다음에 열면 첫 화면에 '이어서 열기 — 제목 · 고친 시각'.</td></tr>
+  <tr><td><span class="btn">저장</span> (Ctrl+S)</td><td>이 프로그램의 악보 파일 <b>.swc</b> — 악보와 파트별 소리·크기·켜기·아래 글자·보기 설정. 다른 기기로 옮기거나 보관할 때.</td></tr>
+  <tr><td><span class="btn">MusicXML</span></td><td>피날레·뮤즈스코어·시벨리우스에서 여는 <b>.musicxml</b> — 고친 음, 임시표, 붙임줄, 구음(가사).</td></tr>
+</table>
+<div class="box warn"><p>자동 저장은 그 브라우저 안에만 있습니다. 브라우저 기록을 지우거나 다른 기기에서 열면 없으니, 중요한 악보는 <span class="btn">저장</span>으로 .swc 파일을 받아 두세요.</p></div>
+
+<h2>10. 단축키와 알아 둘 점</h2>
+<table>
+  <tr><th style="width:30%">키</th><th>하는 일</th></tr>
+  <tr><td><span class="kbd">Space</span></td><td>재생 · 멈춤</td></tr>
+  <tr><td><span class="kbd">←</span> <span class="kbd">→</span></td><td>앞 · 뒤 음 고르기</td></tr>
+  <tr><td><span class="kbd">↑</span> <span class="kbd">↓</span> / <span class="kbd">Ctrl</span>+<span class="kbd">↑</span><span class="kbd">↓</span></td><td>반음 / 옥타브</td></tr>
+  <tr><td><span class="kbd">C</span>~<span class="kbd">B</span> / <span class="kbd">Shift</span>+<span class="kbd">C</span>~<span class="kbd">B</span></td><td>그 음으로 / 화음으로 더하기</td></tr>
+  <tr><td><span class="kbd">1</span>~<span class="kbd">7</span>, <span class="kbd">.</span></td><td>길이(64분 · 32분 · 16분 · 8분 · 4분 · 2분 · 온음표), 점</td></tr>
+  <tr><td><span class="kbd">Delete</span></td><td>지우기(쉼표로)</td></tr>
+  <tr><td><span class="kbd">Ctrl</span>+<span class="kbd">Z</span> / <span class="kbd">Y</span></td><td>되돌리기 / 다시</td></tr>
+  <tr><td><span class="kbd">Ctrl</span>+<span class="kbd">S</span></td><td>저장(.swc)</td></tr>
+  <tr><td><span class="kbd">Esc</span></td><td>선택 풀기 · 넣기 상태 끝내기 · 창 닫기</td></tr>
+</table>
+<h3>사용법 · 업데이트 이력</h3>
+<p>위 막대의 <span class="btn">사용법</span>은 이 설명서의 요약을 화면에서 보여 주고, <span class="btn">이력</span>은 날짜별로 새로 생긴 기능과 고친 문제를 보여 줍니다(항목을 누르면 자세한 내용). <span class="btn">설명서</span>는 이 PDF를 받습니다.</p>
+<figure class="half"><img src="img/16_hist.png"><figcaption>업데이트 이력 창</figcaption></figure>
+<h3>알아 둘 점</h3>
+<ul>
+  <li>PDF 해석은 드물게 음·박을 잘못 읽을 수 있습니다 — <span class="tab">곡 정보</span>의 '해석을 확인할 곳'을 확인하세요.</li>
+  <li>악보를 마디 묶음으로 나눠 그리므로, 묶음 경계에 걸친 붙임줄·이음줄이 끊겨 보일 수 있습니다(저장한 MusicXML에는 그대로 있음).</li>
+  <li>율명·구음 글자가 빽빽한 총보에서는 셈여림이나 다음 오선과 겹칠 수 있습니다. 파트 하나로 보면 잘 보입니다.</li>
+  <li>정간보에는 아직 시김새(농현·전성 등)와 장단의 대강 구분이 없습니다.</li>
+</ul>
+</body>
+</html>

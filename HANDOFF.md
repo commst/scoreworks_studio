@@ -1,12 +1,13 @@
 # ScoreWorks Studio 인수인계 메모
 
 새 대화에서 이어 작업할 때 먼저 읽는 문서. 무엇을 왜 고쳤는지는 CHANGELOG.md, 구성·실행은 README.md, 결정 사항은 docs/DESIGN.md.
-(마지막 갱신: 2026-11-24, CHANGELOG 15번까지)
+(마지막 갱신: 2026-11-24, CHANGELOG 16번까지)
 
 ## 1. 작업 규칙 (사용자 요청 — ScoreWorks와 같음)
 
 - 작업 **단계마다 진행 상황을 보고**한다
-- 고칠 때마다 CHANGELOG(날짜·일련번호), 바뀌면 README·DESIGN·HANDOFF도
+- 고칠 때마다 CHANGELOG(날짜·일련번호), 바뀌면 README·DESIGN·HANDOFF도, **앱 안 업데이트 이력(index.html `<template id="histTpl">`, 사용자 말로 — 기능 업데이트·버그 수정)**, 화면이 바뀌면 사용법 창(index.html #helpView)과 사용설명서도
+- 사용설명서 갱신: tools/manual/manual.html 고치고 `npm run build && NODE_PATH=/opt/npm-tools/node_modules node tools/manual/mancap.cjs`(그림) → `node tools/manual/mkpdf.cjs`(public/manual.pdf). 글꼴은 /home/claude/work/fonts에 `npm i pretendard@1.3.9 @fontsource-variable/outfit`
 - 목표는 무결점: 고칠 때 기존 기능을 깨지 않는다 — 꼭 필요한 시험만, 그러나 고친 곳에 닿는 시험은 꼭
 - 문법은 ES2020까지(빌드 대상 es2020)
 - **악보 파일은 공개 저장소에 넣지 않는다**(저작권). 시험용 실제 악보는 비공개 저장소 commst/scoreplay_sample(PDF), MusicXML은 ScoreWorks에서 내보내 저장소 밖 폴더에 두고 `SAMPLES_XML=<폴더>`

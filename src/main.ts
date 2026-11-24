@@ -372,6 +372,7 @@ const DUR_KEY: Record<string, Frac> = { '1': [1, 64], '2': [1, 32], '3': [1, 16]
 document.addEventListener('keydown', ev => {
   const t = ev.target as HTMLElement;
   if (!state.score || /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) && (t as HTMLInputElement).type !== 'checkbox' && (t as HTMLInputElement).type !== 'range') return;
+  if (document.querySelector('.modal-back:not([hidden])')) return;   // 사용법·이력 창이 열려 있으면 악보 단축키 쉼
   const ctrl = ev.ctrlKey || ev.metaKey, k = ev.key;
   if (ctrl && (k === 'z' || k === 'Z')) { ev.preventDefault(); undoRedo(!ev.shiftKey); return; }
   if (ctrl && (k === 'y' || k === 'Y')) { ev.preventDefault(); undoRedo(false); return; }
@@ -442,7 +443,7 @@ $('seek').addEventListener('click', ev => {
 // Space: 재생·멈춤
 document.addEventListener('keydown', ev => {
   const t = ev.target as HTMLElement;
-  if (ev.key !== ' ' || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(t.tagName) || !state.score) return;
+  if (ev.key !== ' ' || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(t.tagName) || !state.score || document.querySelector('.modal-back:not([hidden])')) return;
   ev.preventDefault(); $('btnPlay').click();
 });
 
@@ -703,3 +704,26 @@ guIn.addEventListener('keydown', ev => {
   if (n) { state.sel = n; showSel(); guIn.value = ''; editUi(); guIn.focus(); }
   else editUi();
 });
+
+// ── 프로그램 사용법 · 업데이트 이력 (ScoreWorks와 같은 창) ──
+let modalOpener: HTMLElement | null = null;
+function openModal(back: HTMLElement, focusEl: HTMLElement) { modalOpener = document.activeElement as HTMLElement; back.hidden = false; setTimeout(() => focusEl.focus(), 0); }
+function closeModal(back: HTMLElement) { back.hidden = true; if (modalOpener && modalOpener.focus) modalOpener.focus(); }
+const helpView = $('helpView');
+$('helpBtn').onclick = () => openModal(helpView, $('helpClose'));
+$('helpClose').onclick = () => closeModal(helpView);
+helpView.addEventListener('click', ev => { if (ev.target === helpView) closeModal(helpView); });
+function openHistory() {
+  const back = document.createElement('div'); back.className = 'modal-back'; back.id = 'histView';
+  back.innerHTML = `<div class="modal hist-dlg" role="dialog" aria-modal="true" aria-label="업데이트 이력"><div class="mhead"><h2>업데이트 이력</h2></div><div class="mbody"><p class="hist-sub">지금 화면: ${esc(__APP_VERSION__)} 판 · 최근 것이 위에 있습니다. 항목을 누르면 자세한 내용이 나옵니다.</p></div><div class="mfoot"><button class="btn primary" type="button">닫기</button></div></div>`;
+  back.querySelector('.mbody')!.appendChild(($('histTpl') as HTMLTemplateElement).content.cloneNode(true));
+  const cl = back.querySelector('.mfoot button') as HTMLButtonElement;
+  const close = () => { back.remove(); document.removeEventListener('keydown', escK, true); if (modalOpener && modalOpener.focus) modalOpener.focus(); };
+  const escK = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.stopPropagation(); close(); } };
+  cl.onclick = close; back.addEventListener('click', ev => { if (ev.target === back) close(); });
+  document.addEventListener('keydown', escK, true);
+  modalOpener = document.activeElement as HTMLElement;
+  document.body.appendChild(back); cl.focus();
+}
+$('histBtn').onclick = openHistory;
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !helpView.hidden) { ev.stopPropagation(); closeModal(helpView); } }, true);

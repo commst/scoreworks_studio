@@ -20,6 +20,7 @@
 - **율명·구음·정간보**: 보기 방식 '율명·구음'(오선 아래 율명 또는 구음 — 장구 덩·쿵·덕 자동, 거문고·피리 등은 '구음' 칸에 적기), '정간보'(파트 하나를 정간보로 — 장구 포함, 재생 따라가기)
 - **보기**: 총보 또는 파트 하나
 - **저장**: 고친 내용은 브라우저에 자동 저장(다음에 '이어서 열기'), 저장 단추·Ctrl+S로 .swc 파일, MusicXML 저장(피날레·뮤즈스코어용)
+- **사용법 · 업데이트 이력 · 사용설명서**: 위 막대에서 창으로 보거나 PDF 받기
 - 아직 안 되는 것: GitHub 저장, 편성 템플릿, 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
 
 ## 2. 구성
@@ -47,6 +48,8 @@ scoreworks_studio/
 ├─ shared/scoreworks/       ScoreWorks에서 가져온 공통 모듈(여기서 고치지 않음 — 2-1)
 ├─ public/banks/            국악기 녹음 묶음(ScoreWorks와 같음)
 ├─ tools/sync-shared.mjs    공통 모듈·녹음 가져오기
+├─ tools/make-demo.ts       예시곡(설명서 그림·시험용) 만들기
+├─ tools/manual/            사용설명서(manual.html, 그림 찍기 mancap.cjs, PDF mkpdf.cjs → public/manual.pdf)
 ├─ test/                    시험(Node 22)
 └─ docs/DESIGN.md           설계 요약과 결정 사항
 ```

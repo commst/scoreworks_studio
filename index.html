@@ -43,6 +43,10 @@
     <input id="file" type="file" accept=".pdf,.musicxml,.xml,.mxl,.swc" hidden>
     <button class="tb-btn" id="btnSwc" type="button" disabled title="이 프로그램의 악보 파일(.swc)로 저장 (Ctrl+S)"><svg><use href="#i-save"/></svg><span class="ll">저장</span></button>
     <button class="tb-btn" id="btnXml" type="button" disabled title="피날레·뮤즈스코어에서 여는 MusicXML 파일로"><svg><use href="#i-export"/></svg><span class="ll">MusicXML</span></button>
+    <span class="tb-sep"></span>
+    <button class="tb-btn txt" id="histBtn" type="button" title="업데이트 이력"><span class="ll">업데이트 이력</span><span class="ls">이력</span></button>
+    <button class="tb-btn txt" id="helpBtn" type="button" title="프로그램 사용법"><span class="ll">프로그램 사용법</span><span class="ls">사용법</span></button>
+    <a class="tb-btn txt" id="manualBtn" href="./manual.pdf" download="ScoreWorks_Studio_사용설명서.pdf" target="_blank" rel="noopener" title="사용설명서 받기 (PDF)"><span class="ll">사용설명서 받기</span><span class="ls">설명서</span></a>
   </div>
 </header>
 
@@ -157,6 +161,39 @@
   </main>
 </div>
 
+
+<div class="modal-back" id="helpView" hidden>
+  <div class="modal help-dlg" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="mhead"><h2 id="helpTitle">프로그램 사용법</h2><span class="row"><a class="btn" href="./manual.pdf" download="ScoreWorks_Studio_사용설명서.pdf" target="_blank" rel="noopener">사용설명서 받기 (PDF)</a><button class="btn primary" id="helpClose" type="button">닫기</button></span></div>
+    <div class="mbody">
+      <dl class="help">
+        <dt>1. 악보 열기</dt>
+        <dd>위 막대의 <b>악보 열기</b>를 누르거나 파일을 화면에 끌어다 놓습니다. <b>PDF</b>(피날레 등에서 만든 악보 — ScoreWorks와 같은 해석기로 읽음), <b>MusicXML</b>(.musicxml·.xml·.mxl), 이 프로그램에서 저장한 <b>.swc</b>를 열 수 있습니다. 스캔하거나 사진으로 만든 PDF는 읽지 못합니다.
+          <span class="eg">고친 내용은 이 브라우저에 자동으로 저장되어, 다음에 열면 첫 화면에 '이어서 열기'가 나옵니다.</span></dd>
+        <dt>2. 재생하기</dt>
+        <dd>아래 연주 막대의 노란 <b>▶</b>(또는 Space)로 재생·멈춤, ■는 처음으로. 지금 소리 나는 마디의 음이 주홍색으로 바뀌고 화면이 따라갑니다. 진행 막대를 누르면 그 자리로 옮깁니다. <b>빠르기</b>(악보의 빠르기 표시가 먼저), <b>속도</b> −/+ (10%씩), <b>도돌이</b>를 고릅니다.
+          <span class="eg">왼쪽 [파트] 탭: 파트마다 소리 켜기 스위치, 악기 소리, 크기(0~200%)</span></dd>
+        <dt>3. 음 고치기</dt>
+        <dd>음이나 쉼표를 누르면 파랗게 고릅니다(화음은 한 번 더 누르면 그 음만). <b>↑↓</b> 반음, <b>Ctrl+↑↓</b> 옥타브, <b>C~B</b> 그 음으로, <b>1~7</b> 길이(64분~온음표), <b>.</b> 점, <b>Delete</b> 지우기, <b>←→</b> 앞뒤 음, <b>Ctrl+Z / Ctrl+Y</b> 되돌리기·다시. 위 편집 막대의 단추로도 같습니다.</dd>
+        <dt>4. 음 넣기 · 옮기기 · 지우기</dt>
+        <dd>편집 막대 <b>음표</b>판의 음표를 끌어다 악보에 놓으면 그 자리에 새 음이 들어갑니다(놓기 전 파란 음 머리와 '음 이름 · 마디 · 박'으로 자리를 보여 줌). 아무 음도 고르지 않고 음표 단추를 누르면 <b>넣기 상태</b> — 악보를 누르는 곳마다 그 음을 넣습니다(Esc로 끝). 음을 위아래로 끌면 높이, 옆으로 끌면 자리를 옮기고, 악보 밖으로 끌어 놓으면 지웁니다. 휴지통 단추도 지우기입니다.
+          <span class="eg">성부 1·2 고르기, '화음'(또는 Shift를 누른 채 놓기)으로 그 자리 음에 화음 더하기, '마디' 앞에 + / 뒤에 + / 지우기</span></dd>
+        <dt>5. 율명 · 구음 보기</dt>
+        <dd>편집 막대 오른쪽 <b>율명·구음</b>을 고르면 오선 아래에 글자가 붙습니다. 파트마다 [파트] 탭의 '아래 글자'에서 율명·구음·없음을 고릅니다. 기본은 선율 악기 = 율명(황·태·중·임·남, 하배·배·청·중청), 장구 = 구음(덩·쿵·덕·기덕·더러러러). [율명] 탭에서 황종(기본 E♭4 — 정악)과 한글·한자를 고릅니다.
+          <span class="eg">거문고·피리·25현 가야금처럼 높이만으로 정할 수 없는 구음은 음을 고르고 편집 막대 '구음' 칸에 적은 뒤 Enter — 다음 음으로 넘어가며 계속 적습니다. MusicXML에는 가사로 저장됩니다.</span></dd>
+        <dt>6. 정간보 보기</dt>
+        <dd><b>정간보</b>를 고르면 파트 하나를 정간보로 보여 줍니다(위 '보기'에서 파트를 고름 — 장구도 됨). 한 행 = 한 마디, 오른쪽에서 왼쪽으로 읽습니다. 정간 하나는 박자표 분모(4/4 → ♩, 12/8 → ♪), 정간 안에서 음이 여럿 시작하면 칸을 나누고, 음이 이어지는 칸은 비우며, 쉼표는 △. 재생하면 지금 행이 노랗게 따라갑니다. 정간보에서는 고칠 수 없습니다.</dd>
+        <dt>7. 저장</dt>
+        <dd><b>저장</b>(Ctrl+S)은 이 프로그램의 악보 파일(.swc — 파트 소리·크기 설정 포함), <b>MusicXML</b>은 피날레·뮤즈스코어에서 여는 파일입니다. 고친 내용은 따로 누르지 않아도 이 브라우저에 자동 저장됩니다(다른 기기·브라우저로 옮기려면 .swc로 저장).</dd>
+        <dt>보기 · 확대</dt>
+        <dd>'보기'에서 총보 또는 파트 하나(빨리 그려져 고치기 편함), −/+로 크기. 파트보(파트 하나)는 쉬는 마디를 여러 마디 쉼표로 묶어 보여 줍니다.</dd>
+        <dt>알아 둘 점</dt>
+        <dd>PDF 해석은 ScoreWorks와 같아 드물게 음·박을 잘못 읽을 수 있습니다 — [곡 정보] 탭의 '해석을 확인할 곳'을 보고 고치세요. 마디를 넣거나 지우면 마디 번호를 처음부터 차례로 다시 매깁니다. 지원 브라우저: 크롬·엣지·사파리·삼성 인터넷 최근 판(아이패드 사파리 포함).</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
 <footer class="dock">
   <button class="dock-stop" id="btnStop" type="button" title="정지 (처음으로)" aria-label="정지" disabled><svg><use href="#i-stop"/></svg></button>
   <button class="play" id="btnPlay" type="button" title="재생 (Space)" aria-label="재생" disabled><svg><use id="playIcon" href="#i-play"/></svg></button>
@@ -178,6 +215,31 @@
   <span id="status" class="status"></span>
   <audio id="audio" hidden></audio>
 </footer>
+
+<template id="histTpl">
+  <section class="hday"><h3>11월 24일</h3>
+    <h4>기능 업데이트 <small>12</small></h4><ul class="hlist">
+      <li><details><summary>사용법 · 업데이트 이력 · 사용설명서</summary><p>위 막대에 [업데이트 이력]·[프로그램 사용법]·[사용설명서 받기]가 생겼습니다. 사용설명서는 그림과 함께 처음부터 따라 하는 PDF입니다.</p></details></li>
+      <li><details><summary>구음: 장구 자동 · 구음 적기 · 장구 정간보</summary><p>율명·구음 보기에서 장구는 같은 시각에 친 것을 묶어 덩·쿵·덕·기덕·더러러러를 자동으로 붙입니다. 거문고·피리·25현 가야금은 음을 고르고 편집 막대 '구음' 칸에 적은 뒤 Enter(다음 음으로 넘어가며 계속). MusicXML에는 가사로 저장됩니다. 정간보에서 장구 파트도 볼 수 있습니다.</p></details></li>
+      <li><details><summary>율명 보기 · 정간보 보기</summary><p>오선 아래에 율명(황·태·중·임·남, 하배·배·청·중청)을 붙여 보거나, 파트 하나를 정간보(한 행 = 한 마디, 쉼표 △)로 바꿔 봅니다. 황종(기본 E♭4)과 한글·한자는 [율명] 탭에서 고릅니다. 정간보에서도 재생 따라가기가 됩니다.</p></details></li>
+      <li><details><summary>둘째 성부 · 화음 · 마디 넣기와 지우기</summary><p>편집 막대 '성부'에서 1·2를 골라 넣고, '화음'(또는 Shift)으로 그 자리 음에 화음을 더합니다. 고른 음이 있는 마디 앞·뒤에 빈 마디를 넣거나 마디를 지웁니다(지운 마디의 박자·조 바뀜은 다음 마디로).</p></details></li>
+      <li><details><summary>음 지우기 단추 · 밖으로 끌어 지우기</summary><p>휴지통 단추, 또는 음을 악보 밖으로 끌어 놓아 지웁니다(키보드가 없는 아이패드에서도).</p></details></li>
+      <li><details><summary>음표판에서 끌어 넣기 · 음 끌어 옮기기</summary><p>음표판의 음표를 끌어다 악보에 놓으면 새 음이 들어갑니다. 음표 단추를 누른 '넣기 상태'에서는 악보를 누르는 곳마다 넣습니다. 음을 위아래로 끌면 높이, 옆으로 끌면 자리를 옮깁니다.</p></details></li>
+      <li><details><summary>디자인을 ScoreWorks와 같게</summary><p>색·글꼴·위 막대·왼쪽 탭·아래 연주 막대를 ScoreWorks와 같게 바꿨습니다. 파트 카드에는 악기 갈래 색 띠와 켜기 스위치, 연주 막대에는 진행 막대(눌러서 옮기기)와 속도 −/+가 있습니다.</p></details></li>
+      <li><details><summary>자동 저장 · .swc 저장과 열기</summary><p>고친 내용은 이 브라우저에 자동 저장되고, 다음에 열면 '이어서 열기'가 나옵니다. [저장](Ctrl+S)은 .swc 파일로 내려받습니다.</p></details></li>
+      <li><details><summary>음 고치기 · 되돌리기 · 파트 보기</summary><p>음을 눌러 높이(↑↓, 글자 C~B, 옥타브)·길이(1~7, 점)를 바꾸고 쉼표로 만듭니다. Ctrl+Z로 되돌립니다. '보기'에서 파트 하나만 보면 빨리 그려집니다.</p></details></li>
+      <li><details><summary>PDF 악보 불러오기</summary><p>ScoreWorks와 같은 해석기로 PDF를 읽어 오선보로 다시 그립니다. 빈자리는 쉼표, 적을 수 없는 길이는 붙임줄, 잇단음표·빔을 정리합니다.</p></details></li>
+      <li><details><summary>파트보 여러 마디 쉼표 · .mxl 열기</summary><p>파트 하나를 볼 때 쉬는 마디들을 여러 마디 쉼표로 묶습니다. 압축 MusicXML(.mxl)도 엽니다.</p></details></li>
+      <li><details><summary>MusicXML 열어 보기 · 국악기 녹음으로 재생</summary><p>MusicXML을 열어 오선보로 보고, ScoreWorks와 같은 국악기 녹음으로 재생하며 지금 마디를 따라갑니다.</p></details></li>
+    </ul>
+    <h4>버그 수정 <small>4</small></h4><ul class="hlist">
+      <li><details class="hbug"><summary>속이 빈 2분·온음표 머리를 누르면 잡히지 않던 것</summary><p>머리 가운데를 눌러도 가장 가까운 음이 잡힙니다(누르기·끌기).</p></details></li>
+      <li><details class="hbug"><summary>총보 단 모양이 들쭉날쭉하던 것</summary><p>쉬는 파트를 감추지 않고, 모든 단에 줄임 이름을 써서 단마다 오선 수와 왼쪽 시작이 같습니다. 타악 오선의 조표도 없앴습니다.</p></details></li>
+      <li><details class="hbug"><summary>PDF로 불러온 악보에 임시표가 빠지던 것</summary><p>조표 밖의 음(♭·♮ 등)에 조표와 마디 앞 음을 보고 임시표를 붙입니다.</p></details></li>
+      <li><details class="hbug"><summary>재생 중 마디의 글자까지 빨갛게 칠하던 것</summary><p>음표·쉼표·빔·이음줄만 표시합니다.</p></details></li>
+    </ul>
+  </section>
+</template>
 <script type="module" src="./src/main.ts"></script>
 </body>
 </html>
