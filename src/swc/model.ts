@@ -84,7 +84,7 @@ export interface Ev {
 
 // 아티큘레이션·국악 주법 기호. k = staccato·accent·tenuto·marcato·fermata·trill·tremolo(n)·gliss(steps)·
 // nonghyeon(농현)·yoseong(요성)·jeonseong(전성)·toeseong(퇴성)·chuseong(추성)·pizz·arco 등
-export interface Mark { k: string; n?: number; placement?: 'above' | 'below'; }
+export interface Mark { k: string; n?: number; placement?: 'above' | 'below'; text?: string; }   // k = 'gueum': 사람이 적은 구음(text) — MusicXML 가사(lyric)로 주고받음
 
 export interface Dir {
   t: Frac;

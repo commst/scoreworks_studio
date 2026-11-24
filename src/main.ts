@@ -5,12 +5,13 @@ import { parsePdf } from './io/pdf-in.ts';
 import { saveLast, loadLast, toSwcFile, fromSwcFile } from './io/store.ts';
 import { toMusicXml, multiRestGroups } from './io/musicxml-out.ts';
 import { engrave } from './view/engrave.ts';
-import { annotateYul, renderJeonggan, noteNameOf } from './view/yul.ts';
+import { annotateLabels, renderJeonggan, noteNameOf, type LabelCtx } from './view/yul.ts';
+import { isJanggu, manualGu, type LabelMode } from './view/gueum.ts';
 import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './play/player.ts';
 // @ts-ignore
 import { INSTRUMENTS } from '../shared/scoreworks/melody-engine.js';
 import type { Score, Pitch } from './swc/model.ts';
-import { transpose, setLetter, toRest, setDur, toggleDot, insertAt, moveTo, diaOf, keyAt, timeAt, addToChord, addLetter, insertMeasures, deleteMeasures, isWhole, undo as undoEd, redo as redoEd, step as stepSel, refind, evOf, type Sel, type Edit } from './edit/ops.ts';
+import { transpose, setLetter, toRest, setDur, toggleDot, insertAt, moveTo, diaOf, keyAt, timeAt, addToChord, addLetter, insertMeasures, deleteMeasures, isWhole, setGueum, undo as undoEd, redo as redoEd, step as stepSel, refind, evOf, type Sel, type Edit } from './edit/ops.ts';
 import type { Frac } from './swc/frac.ts';
 import { typeOf } from './io/musicxml-out.ts';
 import { beatOf } from './swc/notate.ts';
@@ -110,7 +111,7 @@ async function renderChunk(c: Chunk, sc: Score, w: number, decide: boolean) {
   const eng = await engrave(xml, { width: w, zoom: state.zoom, first: c.from === 0 });
   let h = ''; for (let p = 1; p <= eng.pages; p++) h += eng.svg(p);
   c.el.style.height = ''; c.el.innerHTML = h;
-  if (vs.mode === 'yul') annotateYul(c.el, state.score!, yulOpts());
+  if (vs.mode === 'yul') annotateLabels(c.el, state.score!, labelCtx());
   if (!decide || c.to >= sc.measures.length) return;
   const sys = c.el.querySelectorAll('g.system');
   if (sys.length < 2) return;
@@ -165,11 +166,17 @@ async function redrawMeasures(mis: number[]) {
   status(`다시 그림 ${Math.round(performance.now() - t)}ms`);
 }
 // ── 보기 방식: 오선 / 오선 + 율명 / 정간보 (설정은 이 브라우저에 기억) ──
-interface ViewSet { mode: 'staff' | 'yul' | 'jg'; base: number; hanja: boolean; unit: string; staff: number }
-const vs: ViewSet = (() => { try { return { mode: 'staff', base: 63, hanja: false, unit: 'auto', staff: 1, ...JSON.parse(localStorage.getItem('studio.view') || '{}') }; } catch (e) { return { mode: 'staff', base: 63, hanja: false, unit: 'auto', staff: 1 }; } })();
-const yulOpts = () => ({ base: vs.base, hanja: vs.hanja });
+interface ViewSet { mode: 'staff' | 'yul' | 'jg'; base: number; hanja: boolean; unit: string; staff: number; jing: number; gtype: '25' | 'sanjo' }
+const VS0: ViewSet = { mode: 'staff', base: 63, hanja: false, unit: 'auto', staff: 1, jing: 60, gtype: '25' };
+const vs: ViewSet = (() => { try { return { ...VS0, ...JSON.parse(localStorage.getItem('studio.view') || '{}') }; } catch (e) { return { ...VS0 }; } })();
+// 파트마다 아래 글자: 정한 것, 없으면 장구 = 구음, 다른 타악 = 없음, 선율 = 율명
+function partMode(pi: number): LabelMode {
+  const p = state.score!.parts[pi], L = state.lines[p.id];
+  return (L && L.lab) || (isJanggu(p) ? 'gu' : p.kind === 'perc' ? 'none' : 'yul');
+}
+const labelCtx = (): LabelCtx => ({ base: vs.base, hanja: vs.hanja, jing: vs.jing, sanjo: vs.gtype === 'sanjo', mode: partMode, inst: pi => { const L = state.lines[state.score!.parts[pi].id]; return L ? L.inst : ''; } });
 function saveVs() { try { localStorage.setItem('studio.view', JSON.stringify(vs)); } catch (e) { /* 없음 */ } }
-// 정간보는 파트 하나: 보기에서 고른 파트, 총보면 첫 선율 파트
+// 정간보는 파트 하나: 보기에서 고른 파트(장구 포함), 총보면 첫 선율 파트
 const jgPart = () => state.view >= 0 ? state.view : Math.max(0, state.score!.parts.findIndex(p => p.kind !== 'perc'));
 async function drawJeonggan() {
   const sc = state.score!, pi = jgPart(), part = sc.parts[pi], t = performance.now();
@@ -178,7 +185,7 @@ async function drawJeonggan() {
   const sheet = document.createElement('div'); sheet.className = 'sheet jg-sheet';
   scoreEl.innerHTML = ''; scoreEl.appendChild(sheet);
   chunks = []; mrNow = new Map();
-  const cols = renderJeonggan(sheet, sc, pi, { ...yulOpts(), unit, staff: Math.min(vs.staff, part.staves) });
+  const cols = renderJeonggan(sheet, sc, pi, { ...labelCtx(), unit, staff: Math.min(vs.staff, part.staves) });
   state.elOf = sc.measures.map((_, i) => i);
   state.measureEls = cols; cur = -1; showSel();
   document.documentElement.dataset.drawn = String(cols.length);
@@ -189,7 +196,7 @@ async function drawJeonggan() {
 function viewSetUi() {
   document.querySelectorAll<HTMLButtonElement>('#modeSeg [data-mode]').forEach(b => b.classList.toggle('cur', b.dataset.mode === vs.mode));
   $<HTMLSelectElement>('yulBase').value = String(vs.base); $<HTMLSelectElement>('yulChar').value = vs.hanja ? 'hj' : 'ko';
-  $<HTMLSelectElement>('jgUnit').value = vs.unit; $<HTMLSelectElement>('jgStaff').value = String(vs.staff);
+  $<HTMLSelectElement>('jgUnit').value = vs.unit; $<HTMLSelectElement>('jgStaff').value = String(vs.staff); $<HTMLSelectElement>('jing').value = String(vs.jing); $<HTMLSelectElement>('gtype').value = vs.gtype; $('jingRow').hidden = vs.gtype !== 'sanjo';
   document.body.classList.toggle('jg-mode', vs.mode === 'jg');
   $('jgNote').hidden = vs.mode !== 'jg';
 }
@@ -201,6 +208,8 @@ document.querySelectorAll<HTMLButtonElement>('#modeSeg [data-mode]').forEach(b =
 $('yulBase').onchange = () => { vs.base = +$<HTMLSelectElement>('yulBase').value; saveVs(); viewSetUi(); if (vs.mode !== 'staff') draw(); };
 $('yulChar').onchange = () => { vs.hanja = $<HTMLSelectElement>('yulChar').value === 'hj'; saveVs(); if (vs.mode !== 'staff') draw(); };
 $('jgUnit').onchange = () => { vs.unit = $<HTMLSelectElement>('jgUnit').value; saveVs(); if (vs.mode === 'jg') draw(); };
+$('gtype').onchange = () => { vs.gtype = $<HTMLSelectElement>('gtype').value as ViewSet['gtype']; saveVs(); viewSetUi(); if (vs.mode !== 'staff') draw(); };
+$('jing').onchange = () => { vs.jing = +$<HTMLSelectElement>('jing').value; saveVs(); if (vs.mode !== 'staff') draw(); };
 $('jgStaff').onchange = () => { vs.staff = +$<HTMLSelectElement>('jgStaff').value; saveVs(); if (vs.mode === 'jg') draw(); };
 viewSetUi(); void noteNameOf;
 
@@ -242,8 +251,11 @@ function partsUi() {
     const opts = (L.inst === 'perc' ? [['perc', '타악 (장구 소리)']] : INST_OPTIONS).map(([k, n]) => `<option value="${k}"${k === L.inst ? ' selected' : ''}>${esc(n)}</option>`).join('');
     d.innerHTML = `<div class="top"><span class="nm" title="${esc(p.name || p.id)}">${esc(p.name || p.id)}</span><span class="fam"></span><input class="switch" type="checkbox"${L.on ? ' checked' : ''} title="소리 켜기·끄기" aria-label="${esc(p.name)} 소리 켜기"></div>
       <select title="소리" aria-label="${esc(p.name)} 소리">${opts}</select>
+      <div class="labsel"><span>아래 글자</span><select class="lab" aria-label="${esc(p.name)} 율명·구음">${(p.kind === 'perc' ? [['gu', '구음'], ['none', '없음']] : [['yul', '율명'], ['gu', '구음'], ['none', '없음']]).map(([k, n]) => `<option value="${k}"${k === partMode(state.score!.parts.indexOf(p)) ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="vol"><span>크기</span><input type="range" min="0" max="2" step="0.05" value="${L.vol}" aria-label="${esc(p.name)} 크기"><b>${Math.round(L.vol * 100)}%</b></div>`;
     const [on, sel, vol] = [d.querySelector('.switch') as HTMLInputElement, d.querySelector('select') as HTMLSelectElement, d.querySelector('input[type=range]') as HTMLInputElement];
+    const lab = d.querySelector('select.lab') as HTMLSelectElement;
+    lab.onchange = () => { L.lab = lab.value as LabelMode; autosave(); if (vs.mode !== 'staff') draw(); };
     on.onchange = () => { L.on = on.checked; paint(); changed(); autosave(); };
     sel.onchange = () => { L.inst = sel.value; paint(); for (const b of banksOf(L.inst)) loadBank(b); changed(); autosave(); };
     vol.oninput = () => { (d.querySelector('.vol b') as HTMLElement).textContent = Math.round(+vol.value * 100) + '%'; };
@@ -283,6 +295,9 @@ function editUi() {
   document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed], #editbar [data-ms]').forEach(b => b.disabled = !e);
   document.querySelectorAll<HTMLButtonElement>('#voiceSeg [data-voice]').forEach(b => b.classList.toggle('cur', +b.dataset.voice! === inVoice));
   $('chordBtn').classList.toggle('cur', chordMode);
+  const gi = $<HTMLInputElement>('guIn');
+  if (document.activeElement !== gi || !e) gi.value = e && !e.rest ? manualGu(e) : '';
+  gi.disabled = !e || !!e.rest;
   document.querySelectorAll<HTMLButtonElement>('#palette [data-pal]').forEach(b => b.classList.toggle('cur', !e && b.dataset.pal === armed));
   $('dotBtn').classList.toggle('cur', !e && armDot);
   scoreEl.classList.toggle('arming', !e && !!armed);
@@ -668,3 +683,23 @@ const endDrag = (ev: PointerEvent, drop: boolean) => {
 };
 scoreEl.addEventListener('pointerup', ev => endDrag(ev, true));
 scoreEl.addEventListener('pointercancel', ev => endDrag(ev, false));
+
+// 구음 적기: 음을 고르고 글자를 적은 뒤 Enter(다음 음으로 넘어가며 계속 적기), Esc 그만. 빈 칸으로 Enter = 지우기
+const guIn = $<HTMLInputElement>('guIn');
+function nextNote(s: Sel): Sel | null {
+  let n: Sel | null = s;
+  for (let i = 0; i < 400 && n; i++) { n = stepSel(state.score!, n, 1); if (n) { const e = evOf(state.score!, n); if (e && !e.rest && e.notes) return n; } }
+  return null;
+}
+guIn.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') { guIn.blur(); return; }
+  if (ev.key !== 'Enter' && ev.key !== 'Tab') return;
+  ev.preventDefault();
+  const s = state.sel; if (!s || !state.score) return;
+  const e = evOf(state.score, s); if (!e) return;
+  const ed = setGueum(state.score, s, guIn.value);
+  if (ed.length) { state.undo.push(ed); state.redo = []; edited(ed.map(c => c.mi)); }
+  const n = ev.shiftKey ? null : nextNote(s);
+  if (n) { state.sel = n; showSel(); guIn.value = ''; editUi(); guIn.focus(); }
+  else editUi();
+});

@@ -76,13 +76,16 @@
     <button class="ib del" data-ed="del" type="button" title="지우기 (Delete) — 음을 악보 밖으로 끌어 놓아도 지워집니다" aria-label="지우기"><svg><use href="#i-trash"/></svg></button>
   </div>
   <div class="grp">
+    <label class="gu-in" title="고른 음의 구음을 적고 Enter — 다음 음으로 넘어가며 계속 적습니다(빈 칸 Enter = 지우기). MusicXML에는 가사로 저장"><span class="glab">구음</span><input id="guIn" type="text" placeholder="예: 슬기둥" disabled autocomplete="off"></label>
+  </div>
+  <div class="grp">
     <span class="glab">마디</span>
     <div class="seg"><button data-ms="before" type="button" title="고른 음이 있는 마디 앞에 빈 마디 넣기">앞에 +</button><button data-ms="after" type="button" title="고른 음이 있는 마디 뒤에 빈 마디 넣기">뒤에 +</button><button data-ms="del" type="button" title="고른 음이 있는 마디 지우기(모든 파트)">지우기</button></div>
   </div>
-  <div class="sel-chip jg-note" id="jgNote" hidden><span>정간보 보기 — 음을 고치려면 '오선'이나 '율명'으로</span></div>
+  <div class="sel-chip jg-note" id="jgNote" hidden><span>정간보 보기 — 음을 고치려면 '오선'이나 '율명·구음'으로</span></div>
   <div class="sel-chip" id="selChip"><span id="selInfo">음을 누르면 고칠 수 있습니다</span></div>
   <div class="grp right">
-    <div class="seg" id="modeSeg" title="악보 보기 방식"><button data-mode="staff" type="button" class="cur">오선</button><button data-mode="yul" type="button" title="오선보 아래에 율명">율명</button><button data-mode="jg" type="button" title="정간보로 바꿔 보기(파트 하나)">정간보</button></div>
+    <div class="seg" id="modeSeg" title="악보 보기 방식"><button data-mode="staff" type="button" class="cur">오선</button><button data-mode="yul" type="button" title="오선보 아래에 율명·구음 (파트마다 고름)">율명·구음</button><button data-mode="jg" type="button" title="정간보로 바꿔 보기(파트 하나)">정간보</button></div>
     <label class="vsel">보기 <select id="view" disabled><option value="-1">총보</option></select></label>
     <div class="seg zoom"><button id="zoomOut" type="button" title="작게" aria-label="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" type="button" title="크게" aria-label="크게">+</button></div>
   </div>
@@ -100,7 +103,8 @@
     <section id="tab-info" class="tab"><p class="hint pad">악보를 열면 곡 정보가 나옵니다.</p></section>
     <section id="tab-look" class="tab">
       <div class="setbox">
-        <h3>율명</h3>
+        <h3>율명 · 구음</h3>
+        <p class="hint">'율명·구음' 보기에서 파트마다 아래 글자를 고릅니다(파트 칸의 '아래 글자'). 기본은 선율 악기 = 율명, 장구 = 구음(덩·쿵·덕·기덕·더러러러).<br>구음으로 바꾸면 편집 막대 '구음' 칸에 적은 구음이 나옵니다(거문고·피리·25현 가야금 등). 가야금을 '산조가야금 12현'으로 고르면 줄 구음(청·흥·둥·당·동·징·땅·지·찡·칭·쫑·쨍 — 줄 음과 다르면 누른 음 ˄)이 자동으로 붙습니다.</p>
         <label>황종(가운데 옥타브)
           <select id="yulBase">
             <option value="63">E♭4 — 정악(아악·정가)</option>
@@ -111,6 +115,8 @@
             <option value="70">B♭4</option>
           </select></label>
         <label>글자 <select id="yulChar"><option value="ko">한글 (황·태·중·임·남)</option><option value="hj">한자 (黃·太·仲·林·南)</option></select></label>
+        <label>가야금 <select id="gtype"><option value="25">25현 (구음은 직접 적은 것만)</option><option value="sanjo">산조가야금 12현 (줄 구음 자동)</option></select></label>
+        <label id="jingRow">산조가야금 징(6현) <select id="jing"><option value="60">C4 (기본)</option><option value="58">B♭3</option><option value="59">B3</option><option value="61">C♯4</option><option value="62">D4</option></select></label>
         <p class="hint">옥타브: 하배 · 배 · (가운데) · 청 · 중청. 옮김 악기는 소리 나는 높이로 적습니다. 곡마다 황종 기준이 다를 수 있으니(정악은 E♭, 민속악·창작곡은 악보에 따라) 맞춰 고르세요.</p>
       </div>
       <div class="setbox">

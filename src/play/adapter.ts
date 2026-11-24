@@ -16,7 +16,7 @@ export function defaultInst(p: Part): string {
   return guessInstrument(p.name || '') || 'gayageum';
 }
 
-export interface PlayLine { inst: string; vol: number; on: boolean; oct: number }
+export interface PlayLine { inst: string; vol: number; on: boolean; oct: number; lab?: 'yul' | 'gu' | 'none' }   // lab: 율명·구음 보기에서 이 파트 아래 글자
 
 // .swc를 ScoreWorks 마디 목록으로: 줄 = 파트, 성부 = 오선(1 → R, 2 → L) — 타악은 성부(1 → R, 2 → L)
 export function toEngineBars(score: Score) {

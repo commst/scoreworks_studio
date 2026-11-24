@@ -341,3 +341,13 @@ export function moveTo(score: Score, s: Sel, mi: number, staff: number, t: Frac,
   insertCore(tx, s.pi, mi, staff, voice0, t, e.dur, notes, e);   // 원래 성부 그대로
   return reflow(tx, s.pi, mi, staff, voice0);
 }
+
+// 구음 적기(사람이 적은 구음, 사건마다 하나 — 빈 글자면 지움)
+export function setGueum(score: Score, s: Sel, text: string): Edit {
+  const tx = new Tx(score), pm = tx.touch(s.pi, s.mi), e = pm.events[s.ei];
+  if (!e || e.rest) return tx.done();
+  const t = text.trim(), marks = (e.marks || []).filter(m => m.k !== 'gueum');
+  if (t) marks.push({ k: 'gueum', text: t });
+  e.marks = marks.length ? marks : undefined;
+  return tx.done();
+}

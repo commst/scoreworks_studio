@@ -121,6 +121,8 @@ function readPitch(e: El, part: Part, ties: Map<string, boolean>, voice: number)
 }
 
 function readNotations(e: El, ev: Ev, p: Pitch | undefined): void {
+  // 가사 1절 = 구음(이 프로그램이 적은 것과 같은 자리)
+  for (const l of kids(e, 'lyric')) { const tx = kid(l, 'text'); if (tx && txt(tx) && !(ev.marks || []).some(m => m.k === 'gueum')) (ev.marks = ev.marks || []).push({ k: 'gueum', text: txt(tx) }); }
   for (const n of kids(e, 'notations')) {
     for (const t of kids(n, 'tied')) if (p) { if (attr(t, 'type') === 'start') p.tieStart = true; else if (attr(t, 'type') === 'stop') p.tieStop = true; }
     for (const s of kids(n, 'slur')) { const ty = attr(s, 'type'); if (ty === 'start' || ty === 'stop') (ev.slur = ev.slur || []).push(ty); }

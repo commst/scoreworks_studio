@@ -187,6 +187,11 @@ function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => numbe
   return o;
 }
 
+// 구음(사람이 적은 것)은 가사로 — 피날레·뮤즈스코어에서 음 아래 글자로 보임
+function lyricXml(e: Ev): string {
+  const g = (e.marks || []).find(m => m.k === 'gueum' && m.text);
+  return g ? `<lyric number="1"><syllabic>single</syllabic><text>${esc(g.text!)}</text></lyric>` : '';
+}
 function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number, perc: boolean, M: MeasureInfo, autoA: Map<Pitch, string>, id = ''): string[] {
   const o: string[] = [];
   const written = e.tuplet ? mul(e.dur, fr(e.tuplet.actual, e.tuplet.normal)) : e.dur;
@@ -232,7 +237,7 @@ function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number
     const ties = (p.tieStop ? '<tie type="stop"/>' : '') + (p.tieStart ? '<tie type="start"/>' : '');
     const a = p.acc || autoA.get(p), acc = a ? `<accidental>${esc(a)}</accidental>` : '';
     const head = p.head ? `<notehead>${esc(p.head)}</notehead>` : '';
-    o.push(`<note${id ? ` id="${id}-${i}"` : ''}>${grace}${i ? '<chord/>' : ''}${pitch}${dur}${ties}<voice>${voice}</voice>${tail()}${acc}${tmod}${stem}${head}${staffTag}${i ? '' : beams}${notations(p, i === 0)}</note>`);
+    o.push(`<note${id ? ` id="${id}-${i}"` : ''}>${grace}${i ? '<chord/>' : ''}${pitch}${dur}${ties}<voice>${voice}</voice>${tail()}${acc}${tmod}${stem}${head}${staffTag}${i ? '' : beams}${notations(p, i === 0)}${i ? '' : lyricXml(e)}</note>`);
   });
   return o;
 }
