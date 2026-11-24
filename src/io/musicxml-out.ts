@@ -82,7 +82,7 @@ export function toMusicXml(score: Score, opts: { multiRest?: boolean } = {}): st
       if (mr && mr.has(mi)) at.push(`<measure-style><multiple-rest>${mr.get(mi)}</multiple-rest></measure-style>`);
       if (at.length) o.push('<attributes>' + at.join('') + '</attributes>');
       if (p === score.parts[0]) o.push(...measureDirs(M, dv));
-      o.push(...measureBody(p, mi, M, dv));
+      o.push(...measureBody(p, mi, M, dv, key || 0));
       const right: string[] = [];
       const bs = M.barline === 'double' ? 'light-light' : M.barline === 'final' ? 'light-heavy' : M.barline === 'dashed' ? 'dashed' : M.barline === 'none' ? 'none' : M.repeatEnd ? 'light-heavy' : '';
       if (bs) right.push(`<bar-style>${bs}</bar-style>`);
@@ -123,8 +123,30 @@ function dirXml(d: Dir, staffTag: string, offset: number): string {
   return `<direction placement="${pl}"><direction-type>${inner}</direction-type>${off}${staffTag}</direction>`;
 }
 
-function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => number): string[] {
+// 임시표: 적힌 것(acc)이 없는 음은 조표와 그 마디 앞 음들로 정한다(오선마다, 같은 옥타브의 같은 글자). 붙임줄로 이어지는 음은 적지 않음
+const ACC_NAME: Record<number, string> = { [-2]: 'flat-flat', [-1]: 'flat', 0: 'natural', 1: 'sharp', 2: 'double-sharp' };
+const SH = 'FCGDAEB', FL = 'BEADGCF';
+function keyAlter(key: number, step: string) { return key > 0 ? (SH.indexOf(step) < key ? 1 : 0) : key < 0 ? (FL.indexOf(step) < -key ? -1 : 0) : 0; }
+function autoAcc(pm: { events: Ev[] }, key: number): Map<Pitch, string> {
+  const out = new Map<Pitch, string>();
+  const staves = new Set(pm.events.map(e => e.staff));
+  for (const st of staves) {
+    const cur = new Map<string, number>();
+    const evs = pm.events.filter(e => e.staff === st && e.notes && !e.rest).sort((a, b) => cmp(a.t, b.t) || (a.grace ? -1 : 0) - (b.grace ? -1 : 0));
+    for (const e of evs) for (const n of e.notes!) {
+      const k = n.step + n.oct, now = cur.has(k) ? cur.get(k)! : keyAlter(key, n.step);
+      if (n.tieStop && cmp(e.t, ZERO) === 0) { cur.set(k, n.alter); continue; }   // 앞 마디에서 이어진 음
+      if (n.acc) { cur.set(k, n.alter); continue; }
+      if (n.alter !== now && ACC_NAME[n.alter]) out.set(n, ACC_NAME[n.alter]);
+      cur.set(k, n.alter);
+    }
+  }
+  return out;
+}
+
+function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => number, key = 0): string[] {
   const pm = p.measures[mi] || { events: [] }, o: string[] = [];
+  const acc = p.kind === 'perc' ? new Map<Pitch, string>() : autoAcc(pm, key);
   // 성부마다 따로 적고 backup으로 마디 처음으로 돌아간다(성부 = 오선×10 + 성부 번호)
   const byVoice = new Map<number, Ev[]>();
   for (const e of pm.events) { const k = e.staff * 10 + e.voice; if (!byVoice.has(k)) byVoice.set(k, []); byVoice.get(k)!.push(e); }
@@ -145,7 +167,7 @@ function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => numbe
     for (const e of evs) {
       if (cmp(e.t, pos) > 0) { putDirs(e.t, false); o.push(`<forward><duration>${dv(sub(e.t, pos))}</duration><voice>${voice}</voice>${staffTag}</forward>`); pos = e.t; }
       putDirs(pos, true);
-      o.push(...noteXml(e, voice, staffTag, dv, p.kind === 'perc', M));
+      o.push(...noteXml(e, voice, staffTag, dv, p.kind === 'perc', M, acc));
       if (!e.grace) pos = add(pos, e.dur);
     }
     putDirs(M.len, true);
@@ -154,7 +176,7 @@ function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => numbe
   return o;
 }
 
-function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number, perc: boolean, M: MeasureInfo): string[] {
+function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number, perc: boolean, M: MeasureInfo, autoA: Map<Pitch, string>): string[] {
   const o: string[] = [];
   const written = e.tuplet ? mul(e.dur, fr(e.tuplet.actual, e.tuplet.normal)) : e.dur;
   const tt = e.type ? { type: e.type, dots: e.dots || 0 } : e.measureRest ? null : typeOf(written);
@@ -197,7 +219,7 @@ function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number
   e.notes.forEach((p, i) => {
     const pitch = perc ? `<unpitched><display-step>${p.step}</display-step><display-octave>${p.oct}</display-octave></unpitched>` : `<pitch><step>${p.step}</step>${p.alter ? `<alter>${p.alter}</alter>` : ''}<octave>${p.oct}</octave></pitch>`;
     const ties = (p.tieStop ? '<tie type="stop"/>' : '') + (p.tieStart ? '<tie type="start"/>' : '');
-    const acc = p.acc ? `<accidental>${esc(p.acc)}</accidental>` : '';
+    const a = p.acc || autoA.get(p), acc = a ? `<accidental>${esc(a)}</accidental>` : '';
     const head = p.head ? `<notehead>${esc(p.head)}</notehead>` : '';
     o.push(`<note>${grace}${i ? '<chord/>' : ''}${pitch}${dur}${ties}<voice>${voice}</voice>${tail()}${acc}${tmod}${stem}${head}${staffTag}${i ? '' : beams}${notations(p, i === 0)}</note>`);
   });
