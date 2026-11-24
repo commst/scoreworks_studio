@@ -9,8 +9,9 @@ import { guessInstrument } from '../../shared/scoreworks/melody-engine.js';
 import type { Score, MeasureInfo, Part, PartMeasure, Ev, Pitch, Clef, Dir, Mark } from '../swc/model.ts';
 import { fr, ZERO, cmp, type Frac } from '../swc/frac.ts';
 import { notateVoice, beatOf } from '../swc/notate.ts';
+import { spell } from '../swc/pitch.ts';
+export { spell };
 
-const NAT = [0, 2, 4, 5, 7, 9, 11], LET = 'CDEFGAB';
 const ALIGN_NEED = /박자보다 김|마디 길이를 넘음|마디선이 보이지 않아/;
 // 숨은 쉼표 마디를 세로 자리로 다시 읽는 악보(ScoreWorks ALIGN_SHORT와 같음 — 월광 총보)
 const ALIGN_SHORT = new Set(['3f32a068c87af148-564918']);
@@ -32,22 +33,6 @@ function clefOf(base: number | undefined, perc: boolean): Clef {
   for (const [b0, sg, ln] of CL) { const d = (base ?? 30) - b0; if (d % 7 === 0 && Math.abs(d) <= 14 && (!best || Math.abs(d) < Math.abs(best[3]))) best = [b0, sg, ln, d]; }
   if (!best) return { sign: 'G', line: 2 };
   return best[3] ? { sign: best[1], line: best[2], octave: best[3] / 7 } : { sign: best[1], line: best[2] };
-}
-
-// 음 이름: 해석기가 읽은 온음 자리(dia)가 있으면 그대로, 없으면 조표로
-const SHARPS = [3, 0, 4, 1, 5, 2, 6], FLATS = [6, 2, 5, 1, 4, 0, 3];
-function keyAlt(k: number) { const a = [0, 0, 0, 0, 0, 0, 0]; if (k > 0) for (let i = 0; i < k; i++) a[SHARPS[i]] = 1; else for (let i = 0; i < -k; i++) a[FLATS[i]] = -1; return a; }
-export function spell(midi: number, dia: number | undefined, kf: number): Pitch {
-  if (dia != null) {
-    const st = ((dia % 7) + 7) % 7, oct = Math.floor(dia / 7), alter = midi - (12 * (oct + 1) + NAT[st]);
-    if (Math.abs(alter) <= 2) return { step: LET[st] as Pitch['step'], alter, oct };
-  }
-  const a = keyAlt(kf), pc = ((midi % 12) + 12) % 12;
-  for (let st = 0; st < 7; st++) if ((NAT[st] + a[st] + 12) % 12 === pc) return { step: LET[st] as Pitch['step'], alter: a[st], oct: Math.round((midi - a[st] - NAT[st]) / 12) - 1 };
-  const nat = NAT.indexOf(pc);
-  if (nat >= 0) return { step: LET[nat] as Pitch['step'], alter: 0, oct: Math.round((midi - NAT[nat]) / 12) - 1 };
-  const st = kf < 0 ? NAT.indexOf(pc + 1) : NAT.indexOf(pc - 1), al = kf < 0 ? -1 : 1;
-  return { step: LET[st] as Pitch['step'], alter: al, oct: Math.round((midi - al - NAT[st]) / 12) - 1 };
 }
 
 const UNIT = (u: any, dotted: boolean): 'q' | 'dq' | 'e' | 'h' => {

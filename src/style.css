@@ -33,8 +33,9 @@ input[type=number] { width: 64px; }
 .info dt { color: var(--mute); font-size: 12px; } .info dd { margin: 0 0 8px; }
 
 .score { flex: 1; overflow: auto; padding: 16px; }
-.score .page { background: #fff; margin: 0 auto 16px; box-shadow: 0 1px 4px rgba(0,0,0,.12); max-width: 100%; }
-.score .page svg { display: block; width: 100%; height: auto; }
+.score .sheet { background: #fff; margin: 0 auto 16px; box-shadow: 0 1px 4px rgba(0,0,0,.12); max-width: 100%; padding-bottom: 24px; }
+.score .chunk { overflow: hidden; }
+.score .chunk svg { display: block; width: 100%; height: auto; }
 .score .empty { margin: 12vh auto; max-width: 460px; text-align: center; padding: 32px; border: 2px dashed var(--line); border-radius: 12px; background: #fff; }
 .score.drag .empty, .score.drag { outline: 3px dashed var(--c); outline-offset: -8px; }
 /* 따라가기: 그 마디의 음표·쉼표만 빨갛게 (셈여림·글자는 그대로) */
@@ -49,3 +50,13 @@ input[type=number] { width: 64px; }
   .top { grid-template-columns: 1fr; } .top h1 { grid-column: 1; } .top .tools { grid-row: 2; justify-content: center; }
 }
 .info .warns { font-size: 12px; color: #8a5a00; max-height: 40vh; overflow: auto; }
+.editbar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 6px 12px; background: var(--c2); border-bottom: 1px solid var(--line); }
+.editbar[hidden] { display: none; }
+.editbar button { min-width: 34px; padding: 0 8px; font-size: 16px; }
+.editbar button[data-ed=rest] { font-size: 14px; }
+.selinfo { min-width: 180px; font-weight: 600; color: var(--c); }
+.keys { margin-left: auto; }
+.score svg g.sel, .score svg g.sel * { fill: #1565c0; color: #1565c0; }
+.score svg g.note, .score svg g.rest, .score svg g.mRest { cursor: pointer; }
+.view select { max-width: 160px; }
+@media (max-width: 760px) { .keys { display: none; } }

@@ -10,7 +10,7 @@ function toolkit(): Promise<any> {
   return tkPromise;
 }
 
-export interface EngraveOpts { width: number; zoom: number }   // width: 화면 폭(px), zoom: 100 = 보통
+export interface EngraveOpts { width: number; zoom: number; first?: boolean }   // width: 화면 폭(px), zoom: 100 = 보통, first: 곡 첫 조각(제목 보임)
 
 export interface Engraved { pages: number; svg(page: number): string; timemap(): any[]; tk: any }
 
@@ -21,8 +21,8 @@ export async function engrave(xml: string, o: EngraveOpts): Promise<Engraved> {
     scale,
     pageWidth: Math.max(800, Math.round(o.width * 100 / scale)),
     pageHeight: 60000, adjustPageHeight: true,   // 화면에서는 한 쪽을 길게(넘기지 않고 내려 보기). 인쇄용 쪽 나누기는 따로
-    pageMarginTop: 60, pageMarginBottom: 60, pageMarginLeft: 50, pageMarginRight: 50,
-    breaks: 'auto', header: 'auto', footer: 'none',
+    pageMarginTop: o.first === false ? 10 : 60, pageMarginBottom: 10, pageMarginLeft: 50, pageMarginRight: 50,
+    breaks: 'auto', header: o.first === false ? 'none' : 'auto', footer: 'none',
     mnumInterval: 1,   // 마디 번호를 모든 마디에 (합주 연습에서 마디를 찾기 쉽게)
     svgViewBox: true, svgHtml5: true, svgRemoveXlink: true,
     justificationMaxVertical: 0,

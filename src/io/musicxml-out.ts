@@ -43,14 +43,16 @@ export function multiRestGroups(score: Score): Map<number, number> {
   return out;
 }
 
-export function toMusicXml(score: Score, opts: { multiRest?: boolean } = {}): string {
+// ids: 음마다 id(e파트-마디-사건-음) — 화면에서 누른 음을 찾는 데 씀(Verovio가 그대로 옮김)
+// from·to: 이 마디들만(화면을 조각으로 나눠 그릴 때) — 첫 마디에 그때의 조표·박자(박자표는 감춤)·음자리표를 적음
+export function toMusicXml(score: Score, opts: { multiRest?: boolean; ids?: boolean; pidx?: number[]; from?: number; to?: number } = {}): string {
   const mr = opts.multiRest ? multiRestGroups(score) : null;
   const D = divisionsOf(score), dv = (f: Frac) => Math.round((f[0] * 4 * D) / f[1]);
   const o: string[] = [];
   o.push('<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
     '<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">',
     '<score-partwise version="4.0">',
-    `<work><work-title>${esc(score.meta.title)}</work-title></work>`,
+    (opts.from ? '' : `<work><work-title>${esc(score.meta.title)}</work-title></work>`),
     '<identification>' + (score.meta.composer ? `<creator type="composer">${esc(score.meta.composer)}</creator>` : '') + (score.meta.arranger ? `<creator type="arranger">${esc(score.meta.arranger)}</creator>` : '') + '<encoding><software>ScoreWorks Studio</software></encoding></identification>');
   // 파트 목록 + 악기 갈래 묶음 괄호
   o.push('<part-list>');
@@ -64,17 +66,23 @@ export function toMusicXml(score: Score, opts: { multiRest?: boolean } = {}): st
 
   for (const p of score.parts) {
     o.push(`<part id="${esc(p.id)}">`);
-    let key: number | undefined;
+    let key: number | undefined, time: [number, number] | undefined;
+    const from = opts.from || 0, to = opts.to == null ? score.measures.length : opts.to;
     score.measures.forEach((M, mi) => {
+      if (M.key != null && mi < from) key = M.key;
+      if (M.time) time = M.time;
+      if (mi < from || mi >= to) return;
+      const first = mi === from;
       o.push(`<measure number="${esc(M.number)}">`);
-      if (mi > 0 && (M.pageBreak || M.systemBreak)) o.push(`<print ${M.pageBreak ? 'new-page' : 'new-system'}="yes"/>`);
+      if (!first && (M.pageBreak || M.systemBreak)) o.push(`<print ${M.pageBreak ? 'new-page' : 'new-system'}="yes"/>`);
       if (M.repeatStart || M.ending) o.push(`<barline location="left">${M.repeatStart ? '<bar-style>heavy-light</bar-style>' : ''}${M.ending ? `<ending number="${esc(M.ending.num)}" type="start"/>` : ''}${M.repeatStart ? '<repeat direction="forward"/>' : ''}</barline>`);
       const at: string[] = [];
-      if (mi === 0) at.push(`<divisions>${D}</divisions>`);
-      if (M.key != null && M.key !== key) { at.push(`<key><fifths>${M.key}</fifths>${M.mode ? `<mode>${esc(M.mode)}</mode>` : ''}</key>`); key = M.key; }
-      else if (mi === 0) { at.push('<key><fifths>0</fifths></key>'); key = 0; }
+      if (first) at.push(`<divisions>${D}</divisions>`);
+      if (M.key != null && (M.key !== key || first)) { at.push(`<key><fifths>${M.key}</fifths>${M.mode ? `<mode>${esc(M.mode)}</mode>` : ''}</key>`); key = M.key; }
+      else if (first) { at.push(`<key><fifths>${key || 0}</fifths></key>`); key = key || 0; }
       if (M.time) at.push(`<time${M.timeShow === false ? ' print-object="no"' : ''}><beats>${M.time[0]}</beats><beat-type>${M.time[1]}</beat-type></time>`);
-      if (mi === 0) {
+      else if (first && time) at.push(`<time print-object="no"><beats>${time[0]}</beats><beat-type>${time[1]}</beat-type></time>`);
+      if (first) {
         if (p.staves > 1) at.push(`<staves>${p.staves}</staves>`);
         p.clefs.slice(0, p.staves).forEach((c, i) => at.push(clefXml(c, p.staves > 1 ? i + 1 : 0)));
         if (p.transpose && (p.transpose.octave || p.transpose.chromatic)) at.push(`<transpose>${p.transpose.diatonic != null ? `<diatonic>${p.transpose.diatonic}</diatonic>` : ''}<chromatic>${p.transpose.chromatic || 0}</chromatic>${p.transpose.octave ? `<octave-change>${p.transpose.octave}</octave-change>` : ''}</transpose>`);
@@ -82,7 +90,7 @@ export function toMusicXml(score: Score, opts: { multiRest?: boolean } = {}): st
       if (mr && mr.has(mi)) at.push(`<measure-style><multiple-rest>${mr.get(mi)}</multiple-rest></measure-style>`);
       if (at.length) o.push('<attributes>' + at.join('') + '</attributes>');
       if (p === score.parts[0]) o.push(...measureDirs(M, dv));
-      o.push(...measureBody(p, mi, M, dv, key || 0));
+      o.push(...measureBody(p, mi, M, dv, key || 0, opts.ids ? `e${opts.pidx ? opts.pidx[score.parts.indexOf(p)] : score.parts.indexOf(p)}-${mi}-` : ''));
       const right: string[] = [];
       const bs = M.barline === 'double' ? 'light-light' : M.barline === 'final' ? 'light-heavy' : M.barline === 'dashed' ? 'dashed' : M.barline === 'none' ? 'none' : M.repeatEnd ? 'light-heavy' : '';
       if (bs) right.push(`<bar-style>${bs}</bar-style>`);
@@ -144,7 +152,7 @@ function autoAcc(pm: { events: Ev[] }, key: number): Map<Pitch, string> {
   return out;
 }
 
-function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => number, key = 0): string[] {
+function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => number, key = 0, idp = ''): string[] {
   const pm = p.measures[mi] || { events: [] }, o: string[] = [];
   const acc = p.kind === 'perc' ? new Map<Pitch, string>() : autoAcc(pm, key);
   // 성부마다 따로 적고 backup으로 마디 처음으로 돌아간다(성부 = 오선×10 + 성부 번호)
@@ -167,7 +175,7 @@ function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => numbe
     for (const e of evs) {
       if (cmp(e.t, pos) > 0) { putDirs(e.t, false); o.push(`<forward><duration>${dv(sub(e.t, pos))}</duration><voice>${voice}</voice>${staffTag}</forward>`); pos = e.t; }
       putDirs(pos, true);
-      o.push(...noteXml(e, voice, staffTag, dv, p.kind === 'perc', M, acc));
+      o.push(...noteXml(e, voice, staffTag, dv, p.kind === 'perc', M, acc, idp ? idp + pm.events.indexOf(e) : ''));
       if (!e.grace) pos = add(pos, e.dur);
     }
     putDirs(M.len, true);
@@ -176,7 +184,7 @@ function measureBody(p: Part, mi: number, M: MeasureInfo, dv: (f: Frac) => numbe
   return o;
 }
 
-function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number, perc: boolean, M: MeasureInfo, autoA: Map<Pitch, string>): string[] {
+function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number, perc: boolean, M: MeasureInfo, autoA: Map<Pitch, string>, id = ''): string[] {
   const o: string[] = [];
   const written = e.tuplet ? mul(e.dur, fr(e.tuplet.actual, e.tuplet.normal)) : e.dur;
   const tt = e.type ? { type: e.type, dots: e.dots || 0 } : e.measureRest ? null : typeOf(written);
@@ -213,7 +221,7 @@ function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number
   const beams = (e.beams || []).map((b, i) => `<beam number="${i + 1}">${b}</beam>`).join('');
   if (e.rest || !e.notes || !e.notes.length) {
     const mr = e.measureRest || (cmp(e.t, ZERO) === 0 && cmp(e.dur, M.len) === 0 && !tt);
-    o.push(`<note${e.hidden ? ' print-object="no"' : ''}><rest${mr ? ' measure="yes"' : ''}/>${dur}<voice>${voice}</voice>${mr ? '' : tail()}${tmod}${staffTag}${notations(null, true)}</note>`);
+    o.push(`<note${id ? ` id="${id}-0"` : ''}${e.hidden ? ' print-object="no"' : ''}><rest${mr ? ' measure="yes"' : ''}/>${dur}<voice>${voice}</voice>${mr ? '' : tail()}${tmod}${staffTag}${notations(null, true)}</note>`);
     return o;
   }
   e.notes.forEach((p, i) => {
@@ -221,7 +229,7 @@ function noteXml(e: Ev, voice: number, staffTag: string, dv: (f: Frac) => number
     const ties = (p.tieStop ? '<tie type="stop"/>' : '') + (p.tieStart ? '<tie type="start"/>' : '');
     const a = p.acc || autoA.get(p), acc = a ? `<accidental>${esc(a)}</accidental>` : '';
     const head = p.head ? `<notehead>${esc(p.head)}</notehead>` : '';
-    o.push(`<note>${grace}${i ? '<chord/>' : ''}${pitch}${dur}${ties}<voice>${voice}</voice>${tail()}${acc}${tmod}${stem}${head}${staffTag}${i ? '' : beams}${notations(p, i === 0)}</note>`);
+    o.push(`<note${id ? ` id="${id}-${i}"` : ''}>${grace}${i ? '<chord/>' : ''}${pitch}${dur}${ties}<voice>${voice}</voice>${tail()}${acc}${tmod}${stem}${head}${staffTag}${i ? '' : beams}${notations(p, i === 0)}</note>`);
   });
   return o;
 }

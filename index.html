@@ -16,8 +16,23 @@
     <button id="zoomOut" title="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" title="크게">+</button>
     <span class="sep"></span>
     <button id="btnXml" disabled>MusicXML 저장</button>
+    <span class="sep"></span>
+    <label class="view">보기 <select id="view" disabled><option value="">총보</option></select></label>
   </div>
 </header>
+<div class="editbar" id="editbar" hidden>
+  <button id="undo" title="되돌리기 (Ctrl+Z)" disabled>↶</button><button id="redo" title="다시 (Ctrl+Y)" disabled>↷</button>
+  <span class="sep"></span>
+  <span id="selInfo" class="selinfo">음을 누르면 고칠 수 있습니다</span>
+  <span class="sep"></span>
+  <button data-ed="up" title="반음 올림 (↑)">▲</button><button data-ed="down" title="반음 내림 (↓)">▼</button>
+  <button data-ed="oup" title="옥타브 올림 (Ctrl+↑)">8va</button><button data-ed="odown" title="옥타브 내림 (Ctrl+↓)">8vb</button>
+  <span class="sep"></span>
+  <span class="hint">길이</span><button data-dur="1/32" title="32분음표 (2)">32</button><button data-dur="1/16" title="16분음표 (3)">16</button><button data-dur="1/8" title="8분음표 (4)">8</button><button data-dur="1/4" title="4분음표 (5)">4</button><button data-dur="1/2" title="2분음표 (6)">2</button><button data-dur="1/1" title="온음표 (7)">온</button><button data-ed="dot" title="점 붙이기/떼기 (.)">점</button>
+  <span class="sep"></span>
+  <button data-ed="rest" title="쉼표로 (Delete)">쉼표로</button>
+  <span class="hint keys">음 이름: C D E F G A B · ←→ 옮기기 · Esc 선택 풀기</span>
+</div>
 <div class="body">
   <aside class="side">
     <nav class="tabs"><button class="on" data-tab="parts">파트</button><button data-tab="info">곡 정보</button></nav>
@@ -34,7 +49,7 @@
 <footer class="transport">
   <button id="btnPlay" class="pri" disabled>▶ 재생</button>
   <button id="btnStop" disabled>■</button>
-  <label>빠르기 <input id="bpm" type="number" min="20" max="300" value="90"> <select id="unit"><option value="q">♩</option><option value="dq">♩.</option><option value="e">♪</option><option value="h">𝅗𝅥</option></select></label>
+  <label>빠르기 <input id="bpm" type="number" min="20" max="300" value="90"> <select id="unit"><option value="q">♩</option><option value="dq">♩.</option><option value="e">♪</option><option value="h">2분</option></select></label>
   <label>속도 <select id="speed"><option>50</option><option>70</option><option>80</option><option>90</option><option selected>100</option><option>110</option><option>120</option></select>%</label>
   <label><input id="repeats" type="checkbox" checked> 도돌이</label>
   <span id="status" class="status"></span>

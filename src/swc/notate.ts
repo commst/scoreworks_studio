@@ -32,8 +32,11 @@ function restPieces(t: Frac, d: Frac, beat: Frac): [Frac, Frac][] {
     const q = Math.floor((cur[0] * beat[1]) / (cur[1] * beat[0]) + 1e-9) + 1, nb = mul(beat, [q, 1]);
     const onBeat = cmp(mul(beat, [q - 1, 1]), cur) === 0;
     let len = sub(end, cur);
-    if (!(onBeat && plain(len))) len = cmp(nb, end) < 0 ? sub(nb, cur) : len;
-    for (const p of pieces(len)) { out.push([cur, p]); cur = add(cur, p); }
+    const simple = (d: Frac) => { const t = typeOf(d); return !!t && t.dots <= 1; };   // 쉼표는 점 하나까지
+    if (!(onBeat && simple(len))) len = cmp(nb, end) < 0 ? sub(nb, cur) : len;
+    if (simple(len)) { out.push([cur, len]); cur = add(cur, len); continue; }
+    let r = len;
+    while (cmp(r, ZERO) > 0) { const c = PLAIN.find(v => cmp(v, r) <= 0 && simple(v)) || pieces(r)[0]; out.push([cur, c]); cur = add(cur, c); r = sub(r, c); }
   }
   return out;
 }

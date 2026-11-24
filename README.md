@@ -14,7 +14,9 @@
 
 - **악보 불러오기**: PDF(ScoreWorks 해석기로 읽음)나 MusicXML(.musicxml·.xml·.mxl)을 열어 오선보로 보여 줍니다(조판: Verovio). 파트보는 쉬는 마디를 여러 마디 쉼표로 묶어 그립니다.
 - **재생**: ScoreWorks 국악기 녹음으로 연주합니다(아래 2-3).
-- 아직 안 되는 것: 음 입력·수정, 저장, 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
+- **음 고치기**: 음을 눌러 높이(↑↓, 글자 C~B, Ctrl+↑↓ 옥타브)·길이(1~7, 점 .)·쉼표로(Delete), ←→로 옮기기, 되돌리기(Ctrl+Z)·다시(Ctrl+Y)
+- **보기**: 총보 또는 파트 하나
+- 아직 안 되는 것: 새 음 넣기(빈 마디에 입력), 저장(.swc·자동 저장), 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
 
 ## 2. 구성
 
@@ -30,6 +32,8 @@ scoreworks_studio/
 │  ├─ io/mxl.ts             .mxl 풀기
 │  ├─ swc/notate.ts         소리 길이 → 적을 수 있는 악보(쉼표·붙임줄·잇단·빔)
 │  ├─ io/musicxml-out.ts    .swc → MusicXML (화면 그리기와 내보내기에 같이 씀)
+│  ├─ edit/ops.ts           음 고치기·되돌리기
+│  ├─ swc/pitch.ts          음 이름 ↔ MIDI
 │  ├─ view/engrave.ts       Verovio로 쪽 그리기
 │  ├─ play/adapter.ts       .swc → ScoreWorks 마디·음 사건
 │  └─ play/player.ts        녹음 받기, 소리 만들기(WAV)
@@ -74,6 +78,8 @@ npm test           # 시험
 | 명령 | 내용 |
 |---|---|
 | `npm test` | MusicXML → .swc → MusicXML → .swc 왕복이 같은지(test/fixtures). 실제 악보로도 하려면 `SAMPLES_XML=<폴더> npm test` |
+| `npm test` (edit-ops) | 음 고치기·되돌리기 |
+| `node test/pw-edit.cjs <파일>` | 화면에서 음 고치기(빌드 뒤) |
 | `npm test` (adapter) | .swc → ScoreWorks 재생 계획: 음 수·높이·붙임줄·도돌이 |
 | `npm run build && NODE_PATH=… node test/pw-smoke.cjs <파일…>` | 화면 시험(Playwright): 열기 → 그리기(마디 수) → 재생·따라가기 |
 | `SAMPLES_PDF=<폴더> npm test` | PDF 불러오기: 음표 종류·길이, MusicXML 왕복 |
