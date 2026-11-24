@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { DOMParser } from '@xmldom/xmldom';
 import { parseMusicXml } from '../src/io/musicxml-in.ts';
 import { toMusicXml, typeOf } from '../src/io/musicxml-out.ts';
-import { transpose, setLetter, toRest, setDur, toggleDot, undo, redo, step, type Sel } from '../src/edit/ops.ts';
+import { transpose, setLetter, toRest, setDur, toggleDot, undo, redo, step, insertAt, moveTo, diaOf, type Sel } from '../src/edit/ops.ts';
 import { midiOf } from '../src/swc/pitch.ts';
 import { add, cmp, ZERO } from '../src/swc/frac.ts';
 import type { Score } from '../src/swc/model.ts';
@@ -65,4 +65,27 @@ test('선택 옮기기', () => {
   let s: Sel | null = { pi: 0, mi: 0, ei: 0 }, n = 0;
   while (s && n < 50) { s = step(sc, s, 1); n++; }
   assert.ok(n >= 4 && n < 50);
+});
+
+test('끌어 넣기·옮기기', () => {
+  const sc = load(), orig = J(sc), eds = [];
+  // 4마디(온음표 D5) 가운데(2박)에 8분음표 G4 넣기
+  eds.push(insertAt(sc, 0, 3, 1, [1, 4], [1, 8], 4 * 7 + 4)); check(sc);
+  const pm = sc.parts[0].measures[3];
+  const g = pm.events.find(e => e.notes && e.t[0] === 1 && e.t[1] === 4)!;
+  assert.equal(g.notes![0].step + g.notes![0].oct, 'G4');
+  assert.ok(pm.events.some(e => e.notes && cmp(e.t, ZERO) === 0 && cmp(e.dur, [1, 4]) === 0), '앞 음은 넣은 자리에서 잘림');
+  // 그 음을 3박으로, 온음 두 칸 위(B4)로 옮기기
+  eds.push(moveTo(sc, { pi: 0, mi: 3, ei: pm.events.indexOf(g) }, 3, 1, [1, 2], 2)); check(sc);
+  const m = sc.parts[0].measures[3].events.find(e => e.notes && cmp(e.t, [1, 2]) === 0)!;
+  assert.equal(diaOf(m.notes![0]), 4 * 7 + 6);
+  assert.ok(!sc.parts[0].measures[3].events.some(e => e.notes && cmp(e.t, [1, 4]) === 0), '원래 자리는 쉼표');
+  // 높이만 옮기기(같은 자리)
+  const mi2 = sc.parts[0].measures[3].events.indexOf(m);
+  eds.push(moveTo(sc, { pi: 0, mi: 3, ei: mi2 }, 3, 1, [1, 2], -1)); check(sc);
+  assert.equal(diaOf(sc.parts[0].measures[3].events[mi2].notes![0]), 4 * 7 + 5);
+  // 쉼표 넣기
+  eds.push(insertAt(sc, 0, 2, 1, ZERO, [1, 4], null)); check(sc);
+  for (const ed of eds.reverse()) undo(sc, ed);
+  assert.equal(J(sc), orig);
 });

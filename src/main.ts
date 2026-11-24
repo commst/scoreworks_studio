@@ -9,9 +9,11 @@ import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './pl
 // @ts-ignore
 import { INSTRUMENTS } from '../shared/scoreworks/melody-engine.js';
 import type { Score, Pitch } from './swc/model.ts';
-import { transpose, setLetter, toRest, setDur, toggleDot, undo as undoEd, redo as redoEd, step as stepSel, refind, evOf, type Sel, type Edit } from './edit/ops.ts';
+import { transpose, setLetter, toRest, setDur, toggleDot, insertAt, moveTo, diaOf, keyAt, timeAt, undo as undoEd, redo as redoEd, step as stepSel, refind, evOf, type Sel, type Edit } from './edit/ops.ts';
 import type { Frac } from './swc/frac.ts';
 import { typeOf } from './io/musicxml-out.ts';
+import { beatOf } from './swc/notate.ts';
+import { mul } from './swc/frac.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const INST: Record<string, any> = INSTRUMENTS;
@@ -231,10 +233,13 @@ function showSel() {
 }
 function editUi() {
   const s = state.sel, e = s && state.score ? evOf(state.score, s) : null, p = s ? state.score!.parts[s.pi] : null;
-  $('selChip').classList.toggle('on', !!e);
-  $('selInfo').textContent = !e ? '음을 누르면 고칠 수 있습니다' :
+  $('selChip').classList.toggle('on', !!e); $('selChip').classList.toggle('arm', !e && !!armed);
+  $('selInfo').textContent = !e && armed ? `악보를 누르는 곳에 ${armName()}를 넣습니다 · Esc 그만` : !e ? '음을 누르면 고칠 수 있습니다 · 음표를 끌어다 놓으면 새 음' :
     `${p!.name} · ${state.score!.measures[s!.mi].number}마디 · ${e.rest ? '쉼표' : p!.kind === 'perc' ? '타악' : (s!.ni != null ? [e.notes![s!.ni]] : e.notes!).map(pName).join('·')} · ${e.measureRest ? '온마디' : durName(e)}`;
-  document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed], #editbar [data-dur]').forEach(b => b.disabled = !e);
+  document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed]').forEach(b => b.disabled = !e);
+  document.querySelectorAll<HTMLButtonElement>('#palette [data-pal]').forEach(b => b.classList.toggle('cur', !e && b.dataset.pal === armed));
+  $('dotBtn').classList.toggle('cur', !e && armDot);
+  scoreEl.classList.toggle('arming', !e && !!armed);
   ($('undo') as HTMLButtonElement).disabled = !state.undo.length; ($('redo') as HTMLButtonElement).disabled = !state.redo.length;
 }
 let drawT = 0;
@@ -263,7 +268,7 @@ function undoRedo(u: boolean) {
 }
 $('undo').onclick = () => undoRedo(true); $('redo').onclick = () => undoRedo(false);
 const parseDur = (v: string): Frac => { const [a, b] = v.split('/').map(Number); return [a, b]; };
-document.querySelectorAll<HTMLButtonElement>('#editbar [data-dur]').forEach(b => b.onclick = () => doEdit((sc, s) => setDur(sc, s, parseDur(b.dataset.dur!))));
+
 const ED: Record<string, (sc: Score, s: Sel) => Edit> = {
   up: (sc, s) => transpose(sc, s, 1), down: (sc, s) => transpose(sc, s, -1), oup: (sc, s) => transpose(sc, s, 12), odown: (sc, s) => transpose(sc, s, -12),
   dot: toggleDot, rest: toRest,
@@ -271,6 +276,8 @@ const ED: Record<string, (sc: Score, s: Sel) => Edit> = {
 document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed]').forEach(b => b.onclick = () => doEdit(ED[b.dataset.ed!]));
 // 음 누르기: Verovio가 옮긴 id(e파트-마디-사건-음)
 scoreEl.addEventListener('click', ev => {
+  if (suppressClick) { suppressClick = false; return; }
+  if (armed && !state.sel) { const h = hitAt(ev.clientX, ev.clientY, gridFor(armDur())); if (h) dropNew(h); return; }
   let g = (ev.target as Element).closest('g.note, g.rest, g.mRest, g.multiRest');
   if (!g) {   // 음 바로 옆을 눌러도: 12px 안의 가장 가까운 음·쉼표
     let bd = 12;
@@ -294,12 +301,12 @@ document.addEventListener('keydown', ev => {
   const ctrl = ev.ctrlKey || ev.metaKey, k = ev.key;
   if (ctrl && (k === 'z' || k === 'Z')) { ev.preventDefault(); undoRedo(!ev.shiftKey); return; }
   if (ctrl && (k === 'y' || k === 'Y')) { ev.preventDefault(); undoRedo(false); return; }
-  if (!state.sel) return;
+  if (!state.sel) { if (k === 'Escape' && armed) { armed = null; armDot = false; ghostHide(); editUi(); } return; }
   let f: ((sc: Score, s: Sel) => Edit) | null = null;
   if (k === 'ArrowUp') f = ctrl ? ED.oup : ED.up;
   else if (k === 'ArrowDown') f = ctrl ? ED.odown : ED.down;
   else if (k === 'ArrowLeft' || k === 'ArrowRight') { const n = stepSel(state.score, state.sel, k === 'ArrowRight' ? 1 : -1); if (n) { state.sel = n; showSel(); editUi(); } ev.preventDefault(); return; }
-  else if (k === 'Escape') { state.sel = null; showSel(); editUi(); return; }
+  else if (k === 'Escape') { state.sel = null; armed = null; armDot = false; ghostHide(); showSel(); editUi(); return; }
   else if (k === 'Delete' || k === 'Backspace') f = toRest;
   else if (k === '.') f = toggleDot;
   else if (!ctrl && /^[a-gA-G]$/.test(k)) { const st = k.toUpperCase() as Pitch['step']; f = (sc, s) => setLetter(sc, s, st); }
@@ -426,3 +433,158 @@ document.addEventListener('keydown', ev => { if ((ev.ctrlKey || ev.metaKey) && (
   box.appendChild(p);
   $('btnResume').onclick = () => openScore(last.score, last.fileName, [], { lines: last.lines, view: last.view });
 })();
+
+// ── 음표 끌어 넣기 · 음 끌어 옮기기 ──
+// 음표판(palette): 누르면 고른 음의 길이를 바꾸고(고른 음이 없으면 '넣기' 상태 — 악보를 누르는 곳에 넣음), 끌어다 악보에 놓으면 그 자리에 새 음
+let armed: string | null = null, armDot = false, suppressClick = false;
+const PAL_NAME: Record<string, string> = { '1/1': '온음표', '1/2': '2분음표', '1/4': '4분음표', '1/8': '8분음표', '1/16': '16분음표', '1/32': '32분음표', rest: '4분쉼표' };
+const armName = () => (armDot && armed !== 'rest' ? '점' : '') + PAL_NAME[armed || '1/4'];
+function palDur(v: string, dot: boolean): Frac { const d: Frac = v === 'rest' ? [1, 4] : parseDur(v); return dot ? mul(d, [3, 2]) : d; }
+const armDur = () => palDur(armed || '1/4', armDot && armed !== 'rest');
+const gridFor = (d: Frac): Frac => (d[0] / d[1] < 1 / 8 ? d : [1, 8]);   // 놓는 자리 단위: 8분(더 짧은 음은 그 길이)
+
+interface Hit { pi: number; mi: number; staff: number; t: Frac; dia: number; x: number; y: number; sp: number; label: string }
+const CLEF_REF: Record<string, number> = { G: 32, F: 24, C: 28, percussion: 32, TAB: 32 };   // 음자리표가 가리키는 음(온음 번호): G4·F3·C4
+// 화면 자리 → 파트·마디·오선·시각(격자에 맞춤)·높이
+function hitAt(cx: number, cy: number, grid: Frac): Hit | null {
+  if (!state.score) return null;
+  const sc = viewScore();
+  let best = -1, bd = 1e9;
+  state.measureEls.forEach((m, k) => {
+    const r = m.getBoundingClientRect(); if (cx < r.left || cx > r.right) return;
+    const d = cy < r.top ? r.top - cy : cy > r.bottom ? cy - r.bottom : 0; if (d < bd) { bd = d; best = k; }
+  });
+  if (best < 0 || bd > 90) return null;
+  const mEl = state.measureEls[best], mi = state.elOf.indexOf(best); if (mi < 0) return null;
+  const staves = Array.from(mEl.children).filter(c => c.classList.contains('staff'));
+  let si = -1, sd = 1e9, lines: number[] = [];
+  staves.forEach((st, i) => {
+    const ys = Array.from(st.children).filter(c => c.tagName.toLowerCase() === 'path').slice(0, 5).map(p => { const r = p.getBoundingClientRect(); return r.top + r.height / 2; });
+    if (ys.length < 5) return;
+    const top = Math.min(...ys), bot = Math.max(...ys), d = cy < top ? top - cy : cy > bot ? cy - bot : 0;
+    if (d < sd) { sd = d; si = i; lines = ys; }
+  });
+  if (si < 0) return null;
+  // 몇 번째 오선 → 파트·파트 안 오선
+  let n = si, vpi = 0; while (vpi < sc.parts.length && n >= sc.parts[vpi].staves) { n -= sc.parts[vpi].staves; vpi++; }
+  if (vpi >= sc.parts.length) return null;
+  const part = sc.parts[vpi], pi = state.view < 0 ? vpi : state.view, staff = n + 1;
+  const bot = Math.max(...lines), sp = (bot - Math.min(...lines)) / 4;
+  const clef = part.clefs[staff - 1] || part.clefs[0] || { sign: 'G', line: 2 };
+  const base = (CLEF_REF[clef.sign] ?? 32) - 2 * ((clef.line || 1) - 1) + 7 * (clef.octave || 0);
+  const steps = Math.max(-14, Math.min(22, Math.round((bot - cy) / (sp / 2))));
+  // 시각: 이 마디 음·쉼표들의 가로 자리(같은 시각은 세로로 맞춰 그려짐)를 잇는 선으로
+  const M = state.score.measures[mi], len = M.len, lenV = len[0] / len[1];
+  const at = new Map<number, number[]>();
+  mEl.querySelectorAll('g.note, g.rest').forEach(g => {
+    const id = g.getAttribute('data-id') || '', m = /^e(\d+)-(\d+)-(\d+)-\d+$/.exec(id); if (!m || +m[2] !== mi) return;
+    const e = state.score!.parts[+m[1]].measures[mi].events[+m[3]]; if (!e || e.grace || e.measureRest) return;
+    const h = g.querySelector('.notehead') || g, r = h.getBoundingClientRect(), tv = e.t[0] / e.t[1];
+    (at.get(tv) || at.set(tv, []).get(tv)!).push(r.left + r.width / 2);
+  });
+  const mr = mEl.getBoundingClientRect();
+  let x0 = mr.left + sp;   // 음자리표·조표·박자표 뒤부터
+  mEl.querySelectorAll('g.clef, g.keySig, g.meterSig').forEach(g => { const r = g.getBoundingClientRect(); if (r.width) x0 = Math.max(x0, r.right + sp); });
+  const anc: [number, number][] = [...at].map(([t, xs]) => [t, xs.reduce((a, b) => a + b, 0) / xs.length] as [number, number]).sort((a, b) => a[0] - b[0]);
+  if (!anc.length || anc[0][0] > 0) anc.unshift([0, x0]);
+  anc.push([lenV, mr.right - sp * 0.8]);
+  const mono = anc.filter((a, i) => i === 0 || a[1] > anc[i - 1][1] + 0.5);
+  const x2t = (x: number) => { if (x <= mono[0][1]) return 0; for (let i = 1; i < mono.length; i++) if (x <= mono[i][1]) { const [t0, a] = mono[i - 1], [t1, b] = mono[i]; return t0 + (t1 - t0) * (x - a) / (b - a); } return lenV; };
+  const t2x = (t: number) => { for (let i = 1; i < mono.length; i++) if (t <= mono[i][0]) { const [t0, a] = mono[i - 1], [t1, b] = mono[i]; return a + (b - a) * (t - t0) / ((t1 - t0) || 1); } return mono[mono.length - 1][1]; };
+  const g = grid[0] / grid[1], maxK = Math.max(0, Math.ceil(lenV / g - 1e-9) - 1);
+  const k = Math.max(0, Math.min(maxK, Math.round(x2t(cx) / g - 0.25)));
+  const t: Frac = k === 0 ? [0, 1] : [grid[0] * k, grid[1]];
+  const dia = base + steps, key = keyAt(state.score, mi);
+  const beat = beatOf(timeAt(state.score, mi)), bt = (k * g) / (beat[0] / beat[1]) + 1;
+  const name = part.kind === 'perc' ? '타악' : (() => { const st = 'CDEFGAB'[((dia % 7) + 7) % 7]; const al = key > 0 ? ('FCGDAEB'.indexOf(st) < key ? 1 : 0) : key < 0 ? ('BEADGCF'.indexOf(st) < -key ? -1 : 0) : 0; return st + ACC_SIGN[al] + Math.floor(dia / 7); })();
+  return { pi, mi, staff, t, dia, x: t2x(k * g), y: bot - steps * sp / 2, sp, label: `${name} · ${M.number}마디 ${+bt.toFixed(2)}박` };
+}
+
+// 끌기 표시(파란 음 머리 + 이름표)
+const ghost = document.createElement('div'); ghost.className = 'ghost'; ghost.hidden = true; ghost.innerHTML = '<span class="head"></span><span class="lab"></span><span class="chip" hidden></span>'; document.body.appendChild(ghost);
+function ghostShow(h: Hit | null, px: number, py: number, rest = false, chip = '') {
+  ghost.hidden = false;
+  const head = ghost.querySelector('.head') as HTMLElement, lab = ghost.querySelector('.lab') as HTMLElement, ch = ghost.querySelector('.chip') as HTMLElement;
+  ch.hidden = !chip; if (chip) { ch.innerHTML = `<svg><use href="#${chip}"/></svg>`; ch.style.left = px + 'px'; ch.style.top = py + 'px'; }
+  ghost.classList.toggle('bad', !h);
+  if (!h) { head.style.display = 'none'; lab.style.display = 'none'; return; }
+  head.style.display = ''; lab.style.display = '';
+  head.classList.toggle('rest', rest);
+  head.style.left = h.x + 'px'; head.style.top = (rest ? h.y - h.sp * 0 : h.y) + 'px';
+  head.style.width = (rest ? h.sp * 0.9 : h.sp * 1.35) + 'px'; head.style.height = (rest ? h.sp * 1.8 : h.sp * 0.95) + 'px';
+  lab.style.left = h.x + 'px'; lab.style.top = h.y + 'px'; lab.textContent = rest ? h.label.replace(/^[^·]*·\s*/, '쉼표 · ') : h.label;
+}
+function ghostHide() { ghost.hidden = true; }
+
+function dropNew(h: Hit, v = armed || '1/4', dot = armDot) {
+  if (!state.score) return;
+  const rest = v === 'rest', d = palDur(v, dot && !rest);
+  state.sel = { pi: h.pi, mi: h.mi, ei: 0 };
+  afterEdit(insertAt(state.score, h.pi, h.mi, h.staff, h.t, d, rest ? null : h.dia), { staff: h.staff, voice: 1, t: h.t });
+  if (armed) { state.sel = null; showSel(); editUi(); }   // 넣기 상태에서는 계속 넣을 수 있게
+}
+
+// 음표판 단추: 누르기 / 끌기
+document.querySelectorAll<HTMLButtonElement>('#palette [data-pal]').forEach(b => {
+  const v = b.dataset.pal!;
+  let down: { x: number; y: number; id: number } | null = null, dragging = false;
+  b.addEventListener('pointerdown', ev => { if (!state.score) return; down = { x: ev.clientX, y: ev.clientY, id: ev.pointerId }; dragging = false; b.setPointerCapture(ev.pointerId); });
+  b.addEventListener('pointermove', ev => {
+    if (!down) return;
+    if (!dragging && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 6) { dragging = true; document.body.style.userSelect = 'none'; }
+    if (dragging) { const dot = armDot && !state.sel; ghostShow(hitAt(ev.clientX, ev.clientY, gridFor(palDur(v, dot && v !== 'rest'))), ev.clientX, ev.clientY, v === 'rest', 'n' + (v === 'rest' ? 'r' : v.split('/')[1])); }
+  });
+  const end = (ev: PointerEvent, drop: boolean) => {
+    if (!down) return;
+    const was = dragging; down = null; dragging = false; document.body.style.userSelect = ''; ghostHide();
+    if (was) {
+      if (drop) { const dot = armDot && !state.sel; const h = hitAt(ev.clientX, ev.clientY, gridFor(palDur(v, dot && v !== 'rest'))); if (h) dropNew(h, v, dot); }
+      b.dataset.dragged = '1';
+    }
+  };
+  b.addEventListener('pointerup', ev => end(ev, true));
+  b.addEventListener('pointercancel', ev => end(ev, false));
+  b.addEventListener('click', () => {
+    if (b.dataset.dragged) { delete b.dataset.dragged; return; }
+    if (!state.score) return;
+    if (state.sel) { doEdit(v === 'rest' ? toRest : (sc, s) => setDur(sc, s, parseDur(v))); return; }
+    armed = armed === v ? null : v; if (!armed) armDot = false; editUi();
+  });
+});
+$('dotBtn').onclick = () => { if (!state.score) return; if (state.sel) doEdit(toggleDot); else { armDot = !armDot; editUi(); } };
+
+// 악보 위: 넣기 상태에서 마우스를 올리면 놓일 자리 미리 보기 / 음을 끌어 옮기기(위아래 = 높이, 옆 = 시각)
+let drag: { s: Sel; x: number; y: number; on: boolean; el: Element; dia: number; dur: Frac; pid: number } | null = null;
+scoreEl.addEventListener('pointerdown', ev => {
+  if (!state.score || armed && !state.sel) return;
+  const g = (ev.target as Element).closest('g.note'); const id = g && g.getAttribute('data-id'), m = id && /^e(\d+)-(\d+)-(\d+)-(\d+)$/.exec(id);
+  if (!m) return;
+  const s: Sel = { pi: +m[1], mi: +m[2], ei: +m[3] }, e = evOf(state.score, s); if (!e || !e.notes || e.grace) return;
+  if (state.sel && state.sel.pi === s.pi && state.sel.mi === s.mi && state.sel.ei === s.ei && state.sel.ni != null) s.ni = state.sel.ni;
+  const n = e.notes[s.ni != null ? s.ni : +m[4]] || e.notes[0];
+  drag = { s, x: ev.clientX, y: ev.clientY, on: false, el: g!, dia: diaOf(n), dur: e.dur, pid: ev.pointerId };
+});
+scoreEl.addEventListener('pointermove', ev => {
+  if (drag) {
+    if (!drag.on && Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) > 6) { drag.on = true; drag.el.classList.add('dragging'); try { scoreEl.setPointerCapture(drag.pid); } catch (e) { /* 없음 */ } document.body.style.userSelect = 'none'; }
+    if (drag.on) { ev.preventDefault(); const h = hitAt(ev.clientX, ev.clientY, gridFor(drag.dur)); ghostShow(h && h.pi === drag.s.pi ? h : null, ev.clientX, ev.clientY); }
+    return;
+  }
+  if (armed && !state.sel && ev.pointerType === 'mouse') { const h = hitAt(ev.clientX, ev.clientY, gridFor(armDur())); if (h) ghostShow(h, ev.clientX, ev.clientY, armed === 'rest'); else ghostHide(); }
+});
+scoreEl.addEventListener('pointerleave', () => { if (!drag) ghostHide(); });
+const endDrag = (ev: PointerEvent, drop: boolean) => {
+  if (!drag) return;
+  const d = drag; drag = null; d.el.classList.remove('dragging'); ghostHide(); document.body.style.userSelect = '';
+  if (!d.on) return;
+  suppressClick = true; setTimeout(() => { suppressClick = false; }, 400);
+  if (!drop || !state.score) return;
+  const h = hitAt(ev.clientX, ev.clientY, gridFor(d.dur)); if (!h || h.pi !== d.s.pi) return;
+  state.sel = d.s;
+  const ed = moveTo(state.score, d.s, h.mi, h.staff, h.t, h.dia - d.dia);
+  state.sel = { pi: h.pi, mi: h.mi, ei: 0 };
+  afterEdit(ed, { staff: h.staff, voice: 1, t: h.t });
+  if (!ed.length) { state.sel = d.s; showSel(); editUi(); }
+};
+scoreEl.addEventListener('pointerup', ev => endDrag(ev, true));
+scoreEl.addEventListener('pointercancel', ev => endDrag(ev, false));

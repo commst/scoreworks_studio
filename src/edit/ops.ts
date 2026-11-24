@@ -31,13 +31,14 @@ class Tx {
     return this.score.parts[pi].measures[mi];
   }
   done(): Edit {
-    const out: Edit = [];
+    const out: Edit = [];   // 마디마다 한 번(처음 전 → 지금 후)
     for (const [k, b] of this.before) { const [pi, mi] = k.split(':').map(Number); const a = this.score.parts[pi].measures[mi]; if (JSON.stringify(a) !== JSON.stringify(b)) out.push({ pi, mi, before: b, after: clone(a) }); }
     return out;
   }
 }
 
-export function undo(score: Score, ed: Edit) { for (const c of ed) score.parts[c.pi].measures[c.mi] = clone(c.before); }
+// 같은 마디가 여러 번 기록될 수 있어 되돌리기는 거꾸로(맨 처음 '전'이 남게), 다시는 차례대로(맨 끝 '후'가 남게)
+export function undo(score: Score, ed: Edit) { for (let i = ed.length - 1; i >= 0; i--) score.parts[ed[i].pi].measures[ed[i].mi] = clone(ed[i].before); }
 export function redo(score: Score, ed: Edit) { for (const c of ed) score.parts[c.pi].measures[c.mi] = clone(c.after); }
 
 export const evOf = (score: Score, s: Sel): Ev | undefined => score.parts[s.pi]?.measures[s.mi]?.events[s.ei];
@@ -207,3 +208,62 @@ export function refind(score: Score, s: Sel, staff: number, voice: number, t: Fr
 }
 
 export const STEPS = LET.split('') as Pitch['step'][];
+
+// ── 끌어 넣기·옮기기 (화면에서 음을 끌어 놓을 때) ──
+// 온음 번호(dia): C4 = 28 (옥타브 × 7 + 글자). 조표의 올림·내림을 붙여 음으로
+export const diaOf = (p: Pitch) => p.oct * 7 + LET.indexOf(p.step);
+export function fromDia(d: number, key: number): Pitch {
+  const st = LET[((d % 7) + 7) % 7] as Pitch['step'];
+  return { step: st, alter: keyAltOf(key, st), oct: Math.floor(d / 7) };
+}
+
+// 한 오선·성부의 [t, t+dur) 자리에 음(또는 쉼표)을 넣음: 그 자리에서 시작하는 음은 지우고, 앞에서 걸쳐 오는 음은 t에서 자름
+function insertCore(tx: Tx, pi: number, mi: number, staff: number, voice: number, t: Frac, dur: Frac, notes: Pitch[] | null, from?: Ev) {
+  const sc = tx.score, pm = tx.touch(pi, mi), len = sc.measures[mi].len;
+  let end = add(t, dur); if (cmp(end, len) > 0) end = len;
+  const mine = (x: Ev) => x.staff === staff && x.voice === voice && !x.rest && !x.grace;
+  const cut = (x: Ev) => {   // 붙임줄을 끊음
+    for (const n of x.notes || []) {
+      if (n.tieStop) { const p = tiedPrev(sc, pi, mi, x, n); if (p) { tx.touch(pi, p.mi); p.n.tieStart = undefined; } }
+      if (n.tieStart) { const q = tiedNext(sc, pi, mi, x, n); if (q) { tx.touch(pi, q.mi); q.n.tieStop = undefined; } }
+    }
+  };
+  for (const x of pm.events.filter(x => mine(x) && cmp(x.t, t) >= 0 && cmp(x.t, end) < 0)) { cut(x); pm.events.splice(pm.events.indexOf(x), 1); }
+  for (const x of pm.events.filter(x => mine(x) && cmp(x.t, t) < 0 && cmp(add(x.t, x.dur), t) > 0)) { cut(x); x.dur = sub(t, x.t); }
+  pm.events = pm.events.filter(x => !(x.grace && x.staff === staff && x.voice === voice && cmp(x.t, t) >= 0 && cmp(x.t, end) < 0));
+  if (notes && notes.length) {
+    const ev: Ev = { staff, voice, t, dur: sub(end, t), notes: notes.map(n => ({ step: n.step, alter: n.alter, oct: n.oct, head: n.head })) };
+    if (from) { if (from.marks) ev.marks = from.marks; if (from.slur) ev.slur = from.slur; }
+    pm.events.push(ev);
+  }
+}
+
+// 새 음 넣기(악보에 끌어 놓기·눌러 넣기). dia = null이면 쉼표. 타악 파트는 높이 없이
+export function insertAt(score: Score, pi: number, mi: number, staff: number, t: Frac, dur: Frac, dia: number | null): Edit {
+  const tx = new Tx(score), part = score.parts[pi];
+  const notes = dia == null ? null : part.kind === 'perc' ? [{ step: 'C', alter: 0, oct: 5 } as Pitch] : [fromDia(dia, keyAt(score, mi))];
+  insertCore(tx, pi, mi, staff, 1, t, dur, notes);
+  return reflow(tx, pi, mi, staff, 1);
+}
+
+// 음 옮기기: 다른 자리(같은 파트의 어느 마디·오선)로 — 높이는 온음 단위로 dDia만큼. 같은 자리면 높이만
+export function moveTo(score: Score, s: Sel, mi: number, staff: number, t: Frac, dDia: number): Edit {
+  const tx = new Tx(score), e = evOf(score, s);
+  if (!e || e.grace) return tx.done();
+  const k = keyAt(score, mi), part = score.parts[s.pi];
+  const shift = (n: Pitch) => part.kind === 'perc' ? n : fromDia(diaOf(n) + dDia, k);
+  if (mi === s.mi && staff === e.staff && cmp(t, e.t) === 0) {   // 높이만
+    if (!dDia || !e.notes || part.kind === 'perc') return tx.done();
+    repitch(tx, s, shift);
+    return tx.done();
+  }
+  const notes = e.rest || !e.notes ? null : (s.ni != null && e.notes.length > 1 ? [e.notes[s.ni]] : e.notes).map(shift);
+  // 원래 자리: 화음에서 한 음만 옮기면 그 음만 빼고, 아니면 쉼표로
+  const pm0 = tx.touch(s.pi, s.mi), voice0 = e.voice;
+  if (s.ni != null && e.notes && e.notes.length > 1) e.notes.splice(s.ni, 1);
+  else { insertCore(tx, s.pi, s.mi, e.staff, e.voice, e.t, e.dur, null); }
+  void pm0;
+  reflow(tx, s.pi, s.mi, e.staff, voice0);
+  insertCore(tx, s.pi, mi, staff, 1, t, e.dur, notes, e);
+  return reflow(tx, s.pi, mi, staff, 1);
+}

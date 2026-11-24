@@ -23,6 +23,13 @@
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></symbol>
+  <symbol id="n1" viewBox="0 0 24 24"><ellipse cx="12" cy="13" rx="6.2" ry="4.2" transform="rotate(-20 12 13)" fill="none" stroke="currentColor" stroke-width="2.4"/></symbol>
+  <symbol id="n2" viewBox="0 0 24 24"><ellipse cx="9.5" cy="17.5" rx="4.6" ry="3.2" transform="rotate(-22 9.5 17.5)" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.6 16.5V2.5" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="n4" viewBox="0 0 24 24"><ellipse cx="9.5" cy="17.5" rx="4.6" ry="3.2" transform="rotate(-22 9.5 17.5)" fill="currentColor"/><path d="M13.6 16.5V2.5" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="n8" viewBox="0 0 24 24"><ellipse cx="9.5" cy="17.5" rx="4.6" ry="3.2" transform="rotate(-22 9.5 17.5)" fill="currentColor"/><path d="M13.6 16.5V2.5" stroke="currentColor" stroke-width="1.8"/><path d="M13.6 2.5c.4 3 5.4 4.2 5 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="n16" viewBox="0 0 24 24"><ellipse cx="9.5" cy="17.5" rx="4.6" ry="3.2" transform="rotate(-22 9.5 17.5)" fill="currentColor"/><path d="M13.6 16.5V2.5" stroke="currentColor" stroke-width="1.8"/><path d="M13.6 2.5c.4 2.4 4.6 3.4 4.6 6.8 M13.6 6.5c.4 2.4 4.6 3.4 4.6 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="n32" viewBox="0 0 24 24"><ellipse cx="9.5" cy="18.5" rx="4.6" ry="3.2" transform="rotate(-22 9.5 18.5)" fill="currentColor"/><path d="M13.6 17.5V1.5" stroke="currentColor" stroke-width="1.8"/><path d="M13.6 1.5c.4 2 4 2.8 4 5.6 M13.6 5c.4 2 4 2.8 4 5.6 M13.6 8.5c.4 2 4 2.8 4 5.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="nr" viewBox="0 0 24 24"><path d="M10 2.5l4.6 5.4-3.4 4.2 4.4 5.2c-3.2-1.2-5.6.2-3.4 4.6-4.4-3.4-3.2-6.8.2-6.4l-3.8-4.4 3.2-4z" fill="currentColor"/></symbol>
 </defs></svg>
 
 <header class="topbar">
@@ -53,12 +60,11 @@
     </div>
   </div>
   <div class="grp">
-    <span class="glab">길이</span>
-    <div class="seg">
-      <button data-dur="1/32" type="button" title="32분음표 (2)">32</button><button data-dur="1/16" type="button" title="16분음표 (3)">16</button><button data-dur="1/8" type="button" title="8분음표 (4)">8</button><button data-dur="1/4" type="button" title="4분음표 (5)">4</button><button data-dur="1/2" type="button" title="2분음표 (6)">2</button><button data-dur="1/1" type="button" title="온음표 (7)">온</button>
+    <span class="glab">음표</span>
+    <div class="seg palette" id="palette" title="누르면 고른 음의 길이를 바꾸고, 끌어다 악보에 놓으면 새 음을 넣습니다">
+      <button data-pal="1/1" type="button" title="온음표 (7)" aria-label="온음표"><svg><use href="#n1"/></svg></button><button data-pal="1/2" type="button" title="2분음표 (6)" aria-label="2분음표"><svg><use href="#n2"/></svg></button><button data-pal="1/4" type="button" title="4분음표 (5)" aria-label="4분음표"><svg><use href="#n4"/></svg></button><button data-pal="1/8" type="button" title="8분음표 (4)" aria-label="8분음표"><svg><use href="#n8"/></svg></button><button data-pal="1/16" type="button" title="16분음표 (3)" aria-label="16분음표"><svg><use href="#n16"/></svg></button><button data-pal="1/32" type="button" title="32분음표 (2)" aria-label="32분음표"><svg><use href="#n32"/></svg></button><button data-pal="rest" type="button" title="쉼표 (Delete)" aria-label="쉼표"><svg><use href="#nr"/></svg></button>
     </div>
-    <button class="ib txt" data-ed="dot" type="button" title="점 붙이기·떼기 (.)">점</button>
-    <button class="ib txt" data-ed="rest" type="button" title="쉼표로 (Delete)">쉼표로</button>
+    <button class="ib txt" id="dotBtn" type="button" title="점 붙이기·떼기 (.)">점</button>
   </div>
   <div class="sel-chip" id="selChip"><span id="selInfo">음을 누르면 고칠 수 있습니다</span></div>
   <div class="grp right">
