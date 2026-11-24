@@ -22,6 +22,7 @@
   <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16 M9 7V4.5h6V7 M6.5 7l1 13h9l1-13 M10 11v6 M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></symbol>
   <symbol id="n1" viewBox="0 0 24 24"><ellipse cx="12" cy="13" rx="6.2" ry="4.2" transform="rotate(-20 12 13)" fill="none" stroke="currentColor" stroke-width="2.4"/></symbol>
   <symbol id="n2" viewBox="0 0 24 24"><ellipse cx="9.5" cy="17.5" rx="4.6" ry="3.2" transform="rotate(-22 9.5 17.5)" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13.6 16.5V2.5" stroke="currentColor" stroke-width="1.8"/></symbol>
@@ -66,6 +67,9 @@
     </div>
     <button class="ib txt" id="dotBtn" type="button" title="점 붙이기·떼기 (.)">점</button>
   </div>
+  <div class="grp">
+    <button class="ib del" data-ed="del" type="button" title="지우기 (Delete) — 음을 악보 밖으로 끌어 놓아도 지워집니다" aria-label="지우기"><svg><use href="#i-trash"/></svg></button>
+  </div>
   <div class="sel-chip" id="selChip"><span id="selInfo">음을 누르면 고칠 수 있습니다</span></div>
   <div class="grp right">
     <label class="vsel">보기 <select id="view" disabled><option value="-1">총보</option></select></label>
@@ -91,7 +95,7 @@
         <dt>C D E F G A B</dt><dd>그 음으로 (쉼표면 새 음)</dd>
         <dt>1 ~ 7</dt><dd>64분 · 32분 · 16분 · 8분 · 4분 · 2분 · 온음표</dd>
         <dt>.</dt><dd>점 붙이기·떼기</dd>
-        <dt>Delete</dt><dd>쉼표로</dd>
+        <dt>Delete</dt><dd>지우기 (쉼표로) — 휴지통 단추, 음을 악보 밖으로 끌어 놓기도 같음</dd>
         <dt>Ctrl + Z / Y</dt><dd>되돌리기 / 다시</dd>
         <dt>Ctrl + S</dt><dd>저장 (.swc)</dd>
         <dt>Space</dt><dd>재생·멈춤</dd>

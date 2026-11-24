@@ -61,6 +61,20 @@ const path = require('path'), fs = require('fs');
     // 5) 되돌리기 네 번 → 처음과 같음
     for (let i = 0; i < 4; i++) { s0 = await seq(); await pg.keyboard.press('Control+z'); await waitDraw(s0); }
     ok(await notesIn(3) === before && await notesIn(1) === b1, '되돌리기로 처음대로');
+    // 6) 음을 악보 밖(왼쪽 칸)으로 끌어 지우기
+    const nb0 = await (await pg.$('[data-id="e0-0-0-0"] .notehead')).boundingBox();
+    s0 = await seq();
+    await pg.mouse.move(nb0.x + nb0.width / 2, nb0.y + nb0.height / 2); await pg.mouse.down();
+    await pg.mouse.move(150, 500, { steps: 10 });
+    const dl = await pg.evaluate(() => document.querySelector('.ghost .lab').textContent);
+    await pg.mouse.up(); await waitDraw(s0);
+    ok((await notesIn(0)) === '', `밖으로 끌어 지우기 (표시 "${dl}")`);
+    // 7) 음을 고르고 휴지통 단추
+    const b2 = await notesIn(2);
+    const hb = await (await pg.$('[data-id="e0-2-0-0"] .notehead')).boundingBox(); await pg.mouse.click(hb.x + hb.width / 2, hb.y + hb.height / 2);   // 속이 빈 머리 가운데를 눌러도 잡히는지
+    s0 = await seq(); await pg.click('#editbar [data-ed="del"]'); await waitDraw(s0);
+    const a2 = await notesIn(2);
+    ok(a2 !== b2 && a2.split(' ').length === b2.split(' ').length - 1, '휴지통 단추로 지우기 ' + b2 + ' → ' + a2);
     await pg.screenshot({ path: '/tmp/studio-drag.png' });
     ok(!errs.length, '콘솔 오류 ' + errs.slice(0, 3).join(' | '));
   } finally { await br.close(); srv.kill(); }

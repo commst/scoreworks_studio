@@ -72,6 +72,9 @@ svg { flex: none; }
 .ghost { position: fixed; z-index: 90; pointer-events: none; left: 0; top: 0; }
 .ghost .head { position: absolute; transform: translate(-50%, -50%) rotate(-20deg); border-radius: 50%; background: rgba(31, 111, 209, .85); box-shadow: 0 0 0 3px rgba(31, 111, 209, .2); }
 .ghost .head.rest { border-radius: 3px; transform: translate(-50%, -50%); }
+.ib.del { color: #b3412f; }
+.ib.del:hover:not(:disabled) { background: #fbe4df; border-color: #d0533a; }
+.ghost.del .lab { background: #c0392b; }
 .ghost.bad .head { background: rgba(160, 160, 170, .7); box-shadow: none; }
 .ghost .lab { position: absolute; transform: translate(-50%, calc(-100% - 18px)); padding: 3px 9px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
 .ghost .chip { position: absolute; transform: translate(10px, 10px); width: 34px; height: 34px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(40, 55, 95, .3); }

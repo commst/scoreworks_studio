@@ -271,22 +271,26 @@ const parseDur = (v: string): Frac => { const [a, b] = v.split('/').map(Number);
 
 const ED: Record<string, (sc: Score, s: Sel) => Edit> = {
   up: (sc, s) => transpose(sc, s, 1), down: (sc, s) => transpose(sc, s, -1), oup: (sc, s) => transpose(sc, s, 12), odown: (sc, s) => transpose(sc, s, -12),
-  dot: toggleDot, rest: toRest,
+  dot: toggleDot, rest: toRest, del: toRest,
 };
 document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed]').forEach(b => b.onclick = () => doEdit(ED[b.dataset.ed!]));
+// 누른 곳의 음·쉼표: 바로 위가 아니어도(속이 빈 2분·온음표 머리 가운데, 음 바로 옆) 12px 안의 가장 가까운 것
+function elAt(ev: { target: EventTarget | null; clientX: number; clientY: number }, sel: string): Element | null {
+  let g = (ev.target as Element).closest ? (ev.target as Element).closest(sel) : null;
+  if (g) return g;
+  let bd = 12;
+  for (const x of scoreEl.querySelectorAll(sel)) {
+    const r = x.getBoundingClientRect();
+    const dx = Math.max(r.left - ev.clientX, 0, ev.clientX - r.right), dy = Math.max(r.top - ev.clientY, 0, ev.clientY - r.bottom), d = Math.hypot(dx, dy);
+    if (d < bd) { bd = d; g = x; }
+  }
+  return g;
+}
 // 음 누르기: Verovio가 옮긴 id(e파트-마디-사건-음)
 scoreEl.addEventListener('click', ev => {
   if (suppressClick) { suppressClick = false; return; }
   if (armed && !state.sel) { const h = hitAt(ev.clientX, ev.clientY, gridFor(armDur())); if (h) dropNew(h); return; }
-  let g = (ev.target as Element).closest('g.note, g.rest, g.mRest, g.multiRest');
-  if (!g) {   // 음 바로 옆을 눌러도: 12px 안의 가장 가까운 음·쉼표
-    let bd = 12;
-    for (const x of scoreEl.querySelectorAll('g.note, g.rest, g.mRest')) {
-      const r = x.getBoundingClientRect();
-      const dx = Math.max(r.left - ev.clientX, 0, ev.clientX - r.right), dy = Math.max(r.top - ev.clientY, 0, ev.clientY - r.bottom), d = Math.hypot(dx, dy);
-      if (d < bd) { bd = d; g = x; }
-    }
-  }
+  const g = elAt(ev, 'g.note, g.rest, g.mRest, g.multiRest');
   const id = g && g.getAttribute('data-id'), m = id && /^e(\d+)-(\d+)-(\d+)-(\d+)$/.exec(id);
   if (!m) { if (state.sel) { state.sel = null; showSel(); editUi(); } return; }
   const s: Sel = { pi: +m[1], mi: +m[2], ei: +m[3] }, e = evOf(state.score!, s);
@@ -502,12 +506,12 @@ function hitAt(cx: number, cy: number, grid: Frac): Hit | null {
 
 // 끌기 표시(파란 음 머리 + 이름표)
 const ghost = document.createElement('div'); ghost.className = 'ghost'; ghost.hidden = true; ghost.innerHTML = '<span class="head"></span><span class="lab"></span><span class="chip" hidden></span>'; document.body.appendChild(ghost);
-function ghostShow(h: Hit | null, px: number, py: number, rest = false, chip = '') {
+function ghostShow(h: Hit | null, px: number, py: number, rest = false, chip = '', delMsg = '') {
   ghost.hidden = false;
   const head = ghost.querySelector('.head') as HTMLElement, lab = ghost.querySelector('.lab') as HTMLElement, ch = ghost.querySelector('.chip') as HTMLElement;
   ch.hidden = !chip; if (chip) { ch.innerHTML = `<svg><use href="#${chip}"/></svg>`; ch.style.left = px + 'px'; ch.style.top = py + 'px'; }
-  ghost.classList.toggle('bad', !h);
-  if (!h) { head.style.display = 'none'; lab.style.display = 'none'; return; }
+  ghost.classList.toggle('bad', !h); ghost.classList.toggle('del', !h && !!delMsg);
+  if (!h) { head.style.display = 'none'; lab.style.display = delMsg ? '' : 'none'; if (delMsg) { lab.style.left = px + 'px'; lab.style.top = py + 'px'; lab.textContent = delMsg; } return; }
   head.style.display = ''; lab.style.display = '';
   head.classList.toggle('rest', rest);
   head.style.left = h.x + 'px'; head.style.top = (rest ? h.y - h.sp * 0 : h.y) + 'px';
@@ -557,7 +561,7 @@ $('dotBtn').onclick = () => { if (!state.score) return; if (state.sel) doEdit(to
 let drag: { s: Sel; x: number; y: number; on: boolean; el: Element; dia: number; dur: Frac; pid: number } | null = null;
 scoreEl.addEventListener('pointerdown', ev => {
   if (!state.score || armed && !state.sel) return;
-  const g = (ev.target as Element).closest('g.note'); const id = g && g.getAttribute('data-id'), m = id && /^e(\d+)-(\d+)-(\d+)-(\d+)$/.exec(id);
+  const g = elAt(ev, 'g.note'); const id = g && g.getAttribute('data-id'), m = id && /^e(\d+)-(\d+)-(\d+)-(\d+)$/.exec(id);
   if (!m) return;
   const s: Sel = { pi: +m[1], mi: +m[2], ei: +m[3] }, e = evOf(state.score, s); if (!e || !e.notes || e.grace) return;
   if (state.sel && state.sel.pi === s.pi && state.sel.mi === s.mi && state.sel.ei === s.ei && state.sel.ni != null) s.ni = state.sel.ni;
@@ -567,7 +571,7 @@ scoreEl.addEventListener('pointerdown', ev => {
 scoreEl.addEventListener('pointermove', ev => {
   if (drag) {
     if (!drag.on && Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) > 6) { drag.on = true; drag.el.classList.add('dragging'); try { scoreEl.setPointerCapture(drag.pid); } catch (e) { /* 없음 */ } document.body.style.userSelect = 'none'; }
-    if (drag.on) { ev.preventDefault(); const h = hitAt(ev.clientX, ev.clientY, gridFor(drag.dur)); ghostShow(h && h.pi === drag.s.pi ? h : null, ev.clientX, ev.clientY); }
+    if (drag.on) { ev.preventDefault(); const h = hitAt(ev.clientX, ev.clientY, gridFor(drag.dur)); ghostShow(h && h.pi === drag.s.pi ? h : null, ev.clientX, ev.clientY, false, '', h ? '' : '놓으면 지웁니다'); }
     return;
   }
   if (armed && !state.sel && ev.pointerType === 'mouse') { const h = hitAt(ev.clientX, ev.clientY, gridFor(armDur())); if (h) ghostShow(h, ev.clientX, ev.clientY, armed === 'rest'); else ghostHide(); }
@@ -579,7 +583,12 @@ const endDrag = (ev: PointerEvent, drop: boolean) => {
   if (!d.on) return;
   suppressClick = true; setTimeout(() => { suppressClick = false; }, 400);
   if (!drop || !state.score) return;
-  const h = hitAt(ev.clientX, ev.clientY, gridFor(d.dur)); if (!h || h.pi !== d.s.pi) return;
+  const h = hitAt(ev.clientX, ev.clientY, gridFor(d.dur));
+  if (!h) {   // 악보(오선) 밖에 놓으면 지우기
+    const e = evOf(state.score, d.s)!; state.sel = d.s;
+    afterEdit(toRest(state.score, d.s), { staff: e.staff, voice: e.voice, t: e.t }); return;
+  }
+  if (h.pi !== d.s.pi) return;
   state.sel = d.s;
   const ed = moveTo(state.score, d.s, h.mi, h.staff, h.t, h.dia - d.dia);
   state.sel = { pi: h.pi, mi: h.mi, ei: 0 };
