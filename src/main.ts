@@ -2,6 +2,7 @@
 import { parseMusicXml } from './io/musicxml-in.ts';
 import { unzipMxl } from './io/mxl.ts';
 import { parsePdf } from './io/pdf-in.ts';
+import { saveLast, loadLast, toSwcFile, fromSwcFile } from './io/store.ts';
 import { toMusicXml, multiRestGroups } from './io/musicxml-out.ts';
 import { engrave } from './view/engrave.ts';
 import { renderScore, defaultInst, banksOf, loadBank, type PlayLine } from './play/player.ts';
@@ -39,7 +40,8 @@ scoreEl.addEventListener('drop', e => { e.preventDefault(); scoreEl.classList.re
 
 async function openFile(f: File) {
   if (/\.pdf$/i.test(f.name)) return openPdf(f);
-  if (!/\.(musicxml|xml|mxl)$/i.test(f.name)) { alert('PDF 또는 MusicXML(.musicxml, .xml, .mxl) 악보를 여세요.'); return; }
+  if (/\.swc$/i.test(f.name)) { try { const { score, studio } = fromSwcFile(await f.text()); await openScore(score, (studio && studio.fileName) || f.name, [], studio); } catch (e: any) { alert('.swc 파일을 열지 못했습니다: ' + (e && e.message || e)); } return; }
+  if (!/\.(musicxml|xml|mxl)$/i.test(f.name)) { alert('PDF, MusicXML(.musicxml, .xml, .mxl) 또는 .swc 악보를 여세요.'); return; }
   status('여는 중…');
   try { await openXml(/\.mxl$/i.test(f.name) ? unzipMxl(await f.arrayBuffer()) : await f.text(), f.name); }
   catch (e: any) { console.error(e); status(''); alert('악보를 읽지 못했습니다: ' + (e && e.message || e)); }
@@ -66,18 +68,20 @@ async function openPdf(f: File) {
 
 export async function openXml(xml: string, name = '') { return openScore(parseMusicXml(xml), name, []); }
 
-async function openScore(score: Score, name: string, warnings: string[]) {
+async function openScore(score: Score, name: string, warnings: string[], restore?: { lines?: Record<string, any>; view?: number }) {
   document.documentElement.dataset.drawn = '0'; document.documentElement.dataset.drawnOk = 'false'; ($('btnPlay') as HTMLButtonElement).disabled = true;
   stop(); state.score = score; state.fileName = name.replace(/\.[^.]+$/, ''); state.rendered = null;
   state.lines = {};
-  for (const p of score.parts) state.lines[p.id] = { inst: defaultInst(p), vol: 1, on: true, oct: 0 };
+  for (const p of score.parts) state.lines[p.id] = { inst: defaultInst(p), vol: 1, on: true, oct: 0, ...(restore && restore.lines && restore.lines[p.id] || {}) };
   const t0 = score.measures.find(m => m.tempo);
   if (t0 && t0.tempo) { $<HTMLInputElement>('bpm').value = String(t0.tempo.bpm); $<HTMLSelectElement>('unit').value = t0.tempo.unit; }
-  state.warnings = warnings; state.sel = null; state.undo = []; state.redo = []; state.view = -1;
+  state.warnings = warnings; state.sel = null; state.undo = []; state.redo = [];
+  state.view = restore && restore.view != null && restore.view < score.parts.length ? restore.view : -1;
+  autosave();
   viewUi(); partsUi(); infoUi(); $('editbar').hidden = false; editUi();
   const d = draw();   // 그리는 동안에도 재생·저장 가능
   for (const L of Object.values(state.lines)) for (const b of banksOf(L.inst)) loadBank(b);   // 녹음은 미리 받아 둔다
-  ($('btnPlay') as HTMLButtonElement).disabled = false; ($('btnXml') as HTMLButtonElement).disabled = false;
+  ($('btnPlay') as HTMLButtonElement).disabled = false; ($('btnXml') as HTMLButtonElement).disabled = false; ($('btnSwc') as HTMLButtonElement).disabled = false;
   await d;
   document.title = (score.meta.title || state.fileName || '악보') + ' — ScoreWorks Studio';
 }
@@ -158,7 +162,7 @@ function viewUi() {
   v.innerHTML = '<option value="-1">총보 (모든 파트)</option>' + state.score!.parts.map((p, i) => `<option value="${i}">${esc(p.name || p.id)}</option>`).join('');
   v.value = String(state.view); v.disabled = state.score!.parts.length < 2;
 }
-$<HTMLSelectElement>('view').onchange = () => { state.view = +$<HTMLSelectElement>('view').value; if (state.sel && state.view >= 0 && state.sel.pi !== state.view) state.sel = null; editUi(); draw(); };
+$<HTMLSelectElement>('view').onchange = () => { state.view = +$<HTMLSelectElement>('view').value; autosave(); if (state.sel && state.view >= 0 && state.sel.pi !== state.view) state.sel = null; editUi(); draw(); };
 let resizeT = 0, drawSeq = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = window.setTimeout(draw, 300); });
 function zoom(d: number) { state.zoom = Math.max(50, Math.min(200, state.zoom + d)); $('zoomLbl').textContent = state.zoom + '%'; draw(); }
@@ -179,9 +183,9 @@ function partsUi() {
       <div class="row"><select title="소리">${opts}</select></div>
       <div class="row"><span class="hint">크기</span><input type="range" min="0" max="2" step="0.05" value="${L.vol}"></div>`;
     const [on, sel, vol] = [d.querySelector('input[type=checkbox]') as HTMLInputElement, d.querySelector('select') as HTMLSelectElement, d.querySelector('input[type=range]') as HTMLInputElement];
-    on.onchange = () => { L.on = on.checked; changed(); };
-    sel.onchange = () => { L.inst = sel.value; for (const b of banksOf(L.inst)) loadBank(b); changed(); };
-    vol.onchange = () => { L.vol = +vol.value; changed(); };
+    on.onchange = () => { L.on = on.checked; changed(); autosave(); };
+    sel.onchange = () => { L.inst = sel.value; for (const b of banksOf(L.inst)) loadBank(b); changed(); autosave(); };
+    vol.onchange = () => { L.vol = +vol.value; changed(); autosave(); };
     box.appendChild(d);
   }
 }
@@ -225,7 +229,7 @@ function afterEdit(ed: Edit, keep?: { staff: number; voice: number; t: Frac }) {
 let dirtyMs = new Set<number>();
 function edited(mis: number[], keep?: { staff: number; voice: number; t: Frac }) {
   if (keep && state.sel) state.sel = refind(state.score!, state.sel, keep.staff, keep.voice, keep.t);
-  state.rendered = null; changed(); editUi();
+  state.rendered = null; changed(); editUi(); autosave();
   for (const m of mis) dirtyMs.add(m);
   clearTimeout(drawT); drawT = window.setTimeout(() => { const m = [...dirtyMs]; dirtyMs = new Set(); redrawMeasures(m); }, 30);
 }
@@ -344,3 +348,36 @@ $('btnXml').onclick = () => {
   a.download = (state.fileName || state.score.meta.title || 'score') + '.musicxml'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
+
+// ── 저장 ──
+// 자동 저장: 고칠 때마다(0.8초 모아서) 이 브라우저에. 다음에 열면 '이어서 열기'
+let saveT = 0;
+function autosave() {
+  clearTimeout(saveT);
+  saveT = window.setTimeout(async () => {
+    if (!state.score) return;
+    const ok = await saveLast({ score: state.score, fileName: state.fileName, lines: state.lines, view: state.view, at: Date.now() });
+    document.documentElement.dataset.saved = ok ? String(Date.now()) : 'fail';
+  }, 800);
+}
+function download(name: string, text: string, type: string) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function saveSwc() {
+  if (!state.score) return;
+  download((state.fileName || state.score.meta.title || 'score') + '.swc', toSwcFile({ score: state.score, fileName: state.fileName, lines: state.lines, view: state.view }), 'application/json');
+}
+$('btnSwc').onclick = saveSwc;
+document.addEventListener('keydown', ev => { if ((ev.ctrlKey || ev.metaKey) && (ev.key === 's' || ev.key === 'S')) { ev.preventDefault(); saveSwc(); } });
+// 처음 화면: 지난번 악보 이어서 열기
+(async () => {
+  const last = await loadLast(); if (!last || state.score) return;
+  const box = scoreEl.querySelector('.empty'); if (!box) return;
+  const d = new Date(last.at), when = `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const p = document.createElement('p'); p.className = 'resume';
+  p.innerHTML = `<button class="pri" id="btnResume">이어서 열기</button><br><span class="hint">${esc(last.score.meta.title || last.fileName || '악보')} · ${when}에 고친 것</span>`;
+  box.appendChild(p);
+  $('btnResume').onclick = () => openScore(last.score, last.fileName, [], { lines: last.lines, view: last.view });
+})();

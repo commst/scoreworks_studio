@@ -10,13 +10,14 @@
 
 ---
 
-## 1. 지금 되는 것 (0.1 — 1단계 시작)
+## 1. 지금 되는 것 (1단계 진행 중)
 
 - **악보 불러오기**: PDF(ScoreWorks 해석기로 읽음)나 MusicXML(.musicxml·.xml·.mxl)을 열어 오선보로 보여 줍니다(조판: Verovio). 파트보는 쉬는 마디를 여러 마디 쉼표로 묶어 그립니다.
 - **재생**: ScoreWorks 국악기 녹음으로 연주합니다(아래 2-3).
 - **음 고치기**: 음을 눌러 높이(↑↓, 글자 C~B, Ctrl+↑↓ 옥타브)·길이(1~7, 점 .)·쉼표로(Delete), ←→로 옮기기, 되돌리기(Ctrl+Z)·다시(Ctrl+Y)
 - **보기**: 총보 또는 파트 하나
-- 아직 안 되는 것: 새 음 넣기(빈 마디에 입력), 저장(.swc·자동 저장), 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
+- **저장**: 고친 내용은 브라우저에 자동 저장(다음에 '이어서 열기'), 저장 단추·Ctrl+S로 .swc 파일, MusicXML 저장(피날레·뮤즈스코어용)
+- 아직 안 되는 것: 새 음 넣기(빈 마디에 입력), GitHub 저장, 편성 템플릿, 국악 기호, 정간보 — 설계서 6장 단계대로 더합니다.
 
 ## 2. 구성
 
@@ -30,6 +31,7 @@ scoreworks_studio/
 │  ├─ io/musicxml-in.ts     MusicXML → .swc
 │  ├─ io/pdf-in.ts          PDF → .swc (ScoreWorks 해석기)
 │  ├─ io/mxl.ts             .mxl 풀기
+│  ├─ io/store.ts           자동 저장(IndexedDB)·.swc 파일
 │  ├─ swc/notate.ts         소리 길이 → 적을 수 있는 악보(쉼표·붙임줄·잇단·빔)
 │  ├─ io/musicxml-out.ts    .swc → MusicXML (화면 그리기와 내보내기에 같이 씀)
 │  ├─ edit/ops.ts           음 고치기·되돌리기
@@ -80,6 +82,7 @@ npm test           # 시험
 | `npm test` | MusicXML → .swc → MusicXML → .swc 왕복이 같은지(test/fixtures). 실제 악보로도 하려면 `SAMPLES_XML=<폴더> npm test` |
 | `npm test` (edit-ops) | 음 고치기·되돌리기 |
 | `node test/pw-edit.cjs <파일>` | 화면에서 음 고치기(빌드 뒤) |
+| `node test/pw-save.cjs <파일>` | 자동 저장·이어서 열기·.swc 저장/열기(빌드 뒤) |
 | `npm test` (adapter) | .swc → ScoreWorks 재생 계획: 음 수·높이·붙임줄·도돌이 |
 | `npm run build && NODE_PATH=… node test/pw-smoke.cjs <파일…>` | 화면 시험(Playwright): 열기 → 그리기(마디 수) → 재생·따라가기 |
 | `SAMPLES_PDF=<폴더> npm test` | PDF 불러오기: 음표 종류·길이, MusicXML 왕복 |

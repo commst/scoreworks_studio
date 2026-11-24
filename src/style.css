@@ -60,3 +60,4 @@ input[type=number] { width: 64px; }
 .score svg g.note, .score svg g.rest, .score svg g.mRest { cursor: pointer; }
 .view select { max-width: 160px; }
 @media (max-width: 760px) { .keys { display: none; } }
+.resume { margin-top: 20px; }

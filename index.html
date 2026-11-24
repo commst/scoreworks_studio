@@ -11,11 +11,11 @@
   <h1>ScoreWorks Studio</h1>
   <div class="tools">
     <button id="btnOpen" class="pri">악보 열기</button>
-    <input id="file" type="file" accept=".pdf,.musicxml,.xml,.mxl" hidden>
+    <input id="file" type="file" accept=".pdf,.musicxml,.xml,.mxl,.swc" hidden>
     <span class="sep"></span>
     <button id="zoomOut" title="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" title="크게">+</button>
     <span class="sep"></span>
-    <button id="btnXml" disabled>MusicXML 저장</button>
+    <button id="btnSwc" disabled title="이 프로그램의 악보 파일(.swc)로 저장 (Ctrl+S)">저장</button><button id="btnXml" disabled title="피날레·뮤즈스코어에서 여는 파일">MusicXML 저장</button>
     <span class="sep"></span>
     <label class="view">보기 <select id="view" disabled><option value="">총보</option></select></label>
   </div>
@@ -42,7 +42,8 @@
   <main id="score" class="score">
     <div class="empty">
       <p><b>PDF 또는 MusicXML 악보</b>를 열거나 여기에 끌어다 놓으세요.</p>
-      <p class="hint">PDF는 피날레 등에서 만든 악보(스캔한 악보는 안 됨) — ScoreWorks와 같은 해석기로 읽습니다. MusicXML은 .musicxml · .xml · .mxl.</p>
+      <p class="hint">PDF는 피날레 등에서 만든 악보(스캔한 악보는 안 됨) — ScoreWorks와 같은 해석기로 읽습니다. MusicXML은 .musicxml · .xml · .mxl, 이 프로그램에서 저장한 악보는 .swc.</p>
+      <p class="hint">고친 내용은 이 브라우저에 자동으로 저장됩니다.</p>
     </div>
   </main>
 </div>
