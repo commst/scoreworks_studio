@@ -2,57 +2,127 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ScoreWorks Studio</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233d5a99'/%3E%3Cstop offset='.55' stop-color='%236b5bd2'/%3E%3Cstop offset='1' stop-color='%23d4688f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='13' fill='url(%23g)'/%3E%3Cellipse cx='19' cy='31' rx='5.2' ry='3.9' transform='rotate(-22 19 31)' fill='%23fff'/%3E%3Cpath d='M23.6 30V11c5 1.4 8.4 4.4 8 10' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap">
 <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
-<header class="top">
-  <h1>ScoreWorks Studio</h1>
-  <div class="tools">
-    <button id="btnOpen" class="pri">악보 열기</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <linearGradient id="swGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3d5a99"/><stop offset=".55" stop-color="#6b5bd2"/><stop offset="1" stop-color="#d4688f"/></linearGradient>
+  <symbol id="swMark" viewBox="0 0 48 48"><rect width="48" height="48" rx="13" fill="url(#swGrad)"/><path d="M6 30c4-7 8-7 12 0s8 7 12 0 8-7 12 0" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="19" cy="31" rx="5.2" ry="3.9" transform="rotate(-22 19 31)" fill="#fff"/><path d="M23.6 30V11c5 1.4 8.4 4.4 8 10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z M8 4v5h7V4 M8 20v-6h8v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 5 4 10l5 5 M4 10h10a5 5 0 0 1 0 10h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 5 5 5-5 5 M20 10H10a5 5 0 0 0 0 10h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></symbol>
+</defs></svg>
+
+<header class="topbar">
+  <div class="tb-left">
+    <button class="tb-song" id="tbSong" type="button" title="악보 열기"><b id="tbSongName">악보 없음</b><span id="tbSongInfo"></span></button>
+  </div>
+  <h1 class="tb-logo"><svg class="sw-mark" aria-hidden="true"><use href="#swMark"/></svg><span class="wm"><span class="wm-a">Score</span><span class="wm-b">Works</span></span><span class="wm-studio">Studio</span></h1>
+  <div class="tb-right">
+    <button class="tb-btn pri" id="btnOpen" type="button" title="PDF·MusicXML·.swc 악보 열기"><svg><use href="#i-open"/></svg><span class="ll">악보 열기</span></button>
     <input id="file" type="file" accept=".pdf,.musicxml,.xml,.mxl,.swc" hidden>
-    <span class="sep"></span>
-    <button id="zoomOut" title="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" title="크게">+</button>
-    <span class="sep"></span>
-    <button id="btnSwc" disabled title="이 프로그램의 악보 파일(.swc)로 저장 (Ctrl+S)">저장</button><button id="btnXml" disabled title="피날레·뮤즈스코어에서 여는 파일">MusicXML 저장</button>
-    <span class="sep"></span>
-    <label class="view">보기 <select id="view" disabled><option value="">총보</option></select></label>
+    <button class="tb-btn" id="btnSwc" type="button" disabled title="이 프로그램의 악보 파일(.swc)로 저장 (Ctrl+S)"><svg><use href="#i-save"/></svg><span class="ll">저장</span></button>
+    <button class="tb-btn" id="btnXml" type="button" disabled title="피날레·뮤즈스코어에서 여는 MusicXML 파일로"><svg><use href="#i-export"/></svg><span class="ll">MusicXML</span></button>
   </div>
 </header>
-<div class="editbar" id="editbar" hidden>
-  <button id="undo" title="되돌리기 (Ctrl+Z)" disabled>↶</button><button id="redo" title="다시 (Ctrl+Y)" disabled>↷</button>
-  <span class="sep"></span>
-  <span id="selInfo" class="selinfo">음을 누르면 고칠 수 있습니다</span>
-  <span class="sep"></span>
-  <button data-ed="up" title="반음 올림 (↑)">▲</button><button data-ed="down" title="반음 내림 (↓)">▼</button>
-  <button data-ed="oup" title="옥타브 올림 (Ctrl+↑)">8va</button><button data-ed="odown" title="옥타브 내림 (Ctrl+↓)">8vb</button>
-  <span class="sep"></span>
-  <span class="hint">길이</span><button data-dur="1/32" title="32분음표 (2)">32</button><button data-dur="1/16" title="16분음표 (3)">16</button><button data-dur="1/8" title="8분음표 (4)">8</button><button data-dur="1/4" title="4분음표 (5)">4</button><button data-dur="1/2" title="2분음표 (6)">2</button><button data-dur="1/1" title="온음표 (7)">온</button><button data-ed="dot" title="점 붙이기/떼기 (.)">점</button>
-  <span class="sep"></span>
-  <button data-ed="rest" title="쉼표로 (Delete)">쉼표로</button>
-  <span class="hint keys">음 이름: C D E F G A B · ←→ 옮기기 · Esc 선택 풀기</span>
+
+<div class="ribbon" id="editbar" hidden>
+  <div class="grp">
+    <button class="ib" id="undo" type="button" title="되돌리기 (Ctrl+Z)" aria-label="되돌리기" disabled><svg><use href="#i-undo"/></svg></button>
+    <button class="ib" id="redo" type="button" title="다시 (Ctrl+Y)" aria-label="다시" disabled><svg><use href="#i-redo"/></svg></button>
+  </div>
+  <div class="grp">
+    <span class="glab">높이</span>
+    <div class="seg">
+      <button data-ed="up" type="button" title="반음 올림 (↑)" aria-label="반음 올림"><svg><use href="#i-up"/></svg></button>
+      <button data-ed="down" type="button" title="반음 내림 (↓)" aria-label="반음 내림"><svg><use href="#i-down"/></svg></button>
+      <button data-ed="oup" type="button" title="옥타브 올림 (Ctrl+↑)">8va</button>
+      <button data-ed="odown" type="button" title="옥타브 내림 (Ctrl+↓)">8vb</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="glab">길이</span>
+    <div class="seg">
+      <button data-dur="1/32" type="button" title="32분음표 (2)">32</button><button data-dur="1/16" type="button" title="16분음표 (3)">16</button><button data-dur="1/8" type="button" title="8분음표 (4)">8</button><button data-dur="1/4" type="button" title="4분음표 (5)">4</button><button data-dur="1/2" type="button" title="2분음표 (6)">2</button><button data-dur="1/1" type="button" title="온음표 (7)">온</button>
+    </div>
+    <button class="ib txt" data-ed="dot" type="button" title="점 붙이기·떼기 (.)">점</button>
+    <button class="ib txt" data-ed="rest" type="button" title="쉼표로 (Delete)">쉼표로</button>
+  </div>
+  <div class="sel-chip" id="selChip"><span id="selInfo">음을 누르면 고칠 수 있습니다</span></div>
+  <div class="grp right">
+    <label class="vsel">보기 <select id="view" disabled><option value="-1">총보</option></select></label>
+    <div class="seg zoom"><button id="zoomOut" type="button" title="작게" aria-label="작게">−</button><span id="zoomLbl">100%</span><button id="zoomIn" type="button" title="크게" aria-label="크게">+</button></div>
+  </div>
 </div>
+
 <div class="body">
-  <aside class="side">
-    <nav class="tabs"><button class="on" data-tab="parts">파트</button><button data-tab="info">곡 정보</button></nav>
-    <section id="tab-parts" class="tab on"><p class="hint">악보를 열면 파트가 여기에 나옵니다.</p></section>
-    <section id="tab-info" class="tab"></section>
+  <aside class="sidebar">
+    <nav class="tabs2" role="tablist">
+      <button class="tab2" role="tab" aria-selected="true" data-tab="parts" type="button">파트</button>
+      <button class="tab2" role="tab" aria-selected="false" data-tab="info" type="button">곡 정보</button>
+      <button class="tab2" role="tab" aria-selected="false" data-tab="keys" type="button">단축키</button>
+    </nav>
+    <section id="tab-parts" class="tab on"><p class="hint pad">악보를 열면 파트가 여기에 나옵니다.</p></section>
+    <section id="tab-info" class="tab"><p class="hint pad">악보를 열면 곡 정보가 나옵니다.</p></section>
+    <section id="tab-keys" class="tab">
+      <dl class="keys">
+        <dt>음 고르기</dt><dd>음·쉼표를 누름 (화음은 한 번 더 누르면 그 음만)</dd>
+        <dt>← →</dt><dd>앞·뒤 음으로</dd>
+        <dt>↑ ↓</dt><dd>반음 올림·내림</dd>
+        <dt>Ctrl + ↑ ↓</dt><dd>옥타브</dd>
+        <dt>C D E F G A B</dt><dd>그 음으로 (쉼표면 새 음)</dd>
+        <dt>1 ~ 7</dt><dd>64분 · 32분 · 16분 · 8분 · 4분 · 2분 · 온음표</dd>
+        <dt>.</dt><dd>점 붙이기·떼기</dd>
+        <dt>Delete</dt><dd>쉼표로</dd>
+        <dt>Ctrl + Z / Y</dt><dd>되돌리기 / 다시</dd>
+        <dt>Ctrl + S</dt><dd>저장 (.swc)</dd>
+        <dt>Space</dt><dd>재생·멈춤</dd>
+        <dt>Esc</dt><dd>선택 풀기</dd>
+      </dl>
+    </section>
   </aside>
-  <main id="score" class="score">
+  <main id="score" class="stage">
     <div class="empty">
-      <p><b>PDF 또는 MusicXML 악보</b>를 열거나 여기에 끌어다 놓으세요.</p>
-      <p class="hint">PDF는 피날레 등에서 만든 악보(스캔한 악보는 안 됨) — ScoreWorks와 같은 해석기로 읽습니다. MusicXML은 .musicxml · .xml · .mxl, 이 프로그램에서 저장한 악보는 .swc.</p>
+      <svg class="hero-mark" aria-hidden="true"><use href="#swMark"/></svg>
+      <h2 class="wm hero-wm"><span class="wm-a">Score</span><span class="wm-b">Works</span><span class="wm-studio">Studio</span></h2>
+      <p class="lead">국악관현악 작곡·악보 편집</p>
+      <p><button class="btn primary big" id="btnOpen2" type="button"><svg><use href="#i-open"/></svg>악보 열기</button></p>
+      <p class="hint">PDF·MusicXML 악보를 열거나 여기에 끌어다 놓으세요.<br>PDF는 피날레 등에서 만든 악보(스캔한 악보는 안 됨) — ScoreWorks와 같은 해석기로 읽습니다.<br>MusicXML은 .musicxml · .xml · .mxl, 이 프로그램에서 저장한 악보는 .swc.</p>
       <p class="hint">고친 내용은 이 브라우저에 자동으로 저장됩니다.</p>
     </div>
   </main>
 </div>
-<footer class="transport">
-  <button id="btnPlay" class="pri" disabled>▶ 재생</button>
-  <button id="btnStop" disabled>■</button>
-  <label>빠르기 <input id="bpm" type="number" min="20" max="300" value="90"> <select id="unit"><option value="q">♩</option><option value="dq">♩.</option><option value="e">♪</option><option value="h">2분</option></select></label>
-  <label>속도 <select id="speed"><option>50</option><option>70</option><option>80</option><option>90</option><option selected>100</option><option>110</option><option>120</option></select>%</label>
-  <label><input id="repeats" type="checkbox" checked> 도돌이</label>
+
+<footer class="dock">
+  <button class="dock-stop" id="btnStop" type="button" title="정지 (처음으로)" aria-label="정지" disabled><svg><use href="#i-stop"/></svg></button>
+  <button class="play" id="btnPlay" type="button" title="재생 (Space)" aria-label="재생" disabled><svg><use id="playIcon" href="#i-play"/></svg></button>
+  <div class="pos">
+    <div class="now"><b id="posBar">정지</b><span id="posTime"></span></div>
+    <div class="bar-track" id="seek"><div class="bar-fill" id="seekFill"></div></div>
+  </div>
+  <div class="dock-group">
+    <span class="dock-lab">빠르기</span>
+    <input id="bpm" type="number" min="20" max="300" value="90" aria-label="빠르기">
+    <select id="unit" aria-label="박 단위"><option value="q">♩</option><option value="dq">♩.</option><option value="e">♪</option><option value="h">2분</option></select>
+  </div>
+  <div class="dock-group">
+    <span class="dock-lab">속도</span>
+    <button class="dock-step" id="spdDn" type="button" aria-label="느리게">−</button><b class="spd" id="spdLbl">100%</b><button class="dock-step" id="spdUp" type="button" aria-label="빠르게">+</button>
+    <input id="speed" type="hidden" value="100">
+  </div>
+  <label class="dock-tgl"><input id="repeats" type="checkbox" checked><span>도돌이</span></label>
   <span id="status" class="status"></span>
   <audio id="audio" hidden></audio>
 </footer>

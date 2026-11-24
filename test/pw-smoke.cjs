@@ -11,7 +11,7 @@ const path = require('path');
   let bad = 0;
   try {
     const pg = await br.newPage({ viewport: { width: 1280, height: 860 } });
-    const errs = []; pg.on('pageerror', e => errs.push(String(e))); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+    const errs = []; pg.on('pageerror', e => errs.push(String(e))); pg.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });   // 글꼴 CDN이 막힌 시험 환경은 빼고
     await pg.goto('http://localhost:4319/');
     for (const f of files) {
       const t = Date.now();

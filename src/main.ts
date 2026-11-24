@@ -31,7 +31,8 @@ const state = {
 function status(s: string) { $('status').textContent = s; }
 
 // ── 열기 ──
-$('btnOpen').onclick = () => $<HTMLInputElement>('file').click();
+const pick = () => $<HTMLInputElement>('file').click();
+$('btnOpen').onclick = pick; $('btnOpen2').onclick = pick; $('tbSong').onclick = pick;
 $<HTMLInputElement>('file').onchange = e => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) openFile(f); (e.target as HTMLInputElement).value = ''; };
 const scoreEl = $('score');
 scoreEl.addEventListener('dragover', e => { e.preventDefault(); scoreEl.classList.add('drag'); });
@@ -84,6 +85,8 @@ async function openScore(score: Score, name: string, warnings: string[], restore
   ($('btnPlay') as HTMLButtonElement).disabled = false; ($('btnXml') as HTMLButtonElement).disabled = false; ($('btnSwc') as HTMLButtonElement).disabled = false;
   await d;
   document.title = (score.meta.title || state.fileName || '악보') + ' — ScoreWorks Studio';
+  $('tbSongName').textContent = score.meta.title || state.fileName || '제목 없음';
+  $('tbSongInfo').textContent = `${score.parts.length}파트 · ${score.measures.length}마디`;
 }
 
 // ── 그리기 ──
@@ -169,29 +172,42 @@ function zoom(d: number) { state.zoom = Math.max(50, Math.min(200, state.zoom + 
 $('zoomIn').onclick = () => zoom(10); $('zoomOut').onclick = () => zoom(-10);
 
 // ── 왼쪽 탭 ──
-document.querySelectorAll<HTMLButtonElement>('.tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.tabs button, .tab').forEach(x => x.classList.remove('on'));
-  b.classList.add('on'); $('tab-' + b.dataset.tab).classList.add('on');
+document.querySelectorAll<HTMLButtonElement>('.tab2').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab2').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  $('tab-' + b.dataset.tab).classList.add('on');
 });
 function esc(s: string) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string)); }
+// 악기 갈래(카드 왼쪽 띠 색): 관악·찰현·발현·타악·그 밖
+const FAM: Record<string, [string, string]> = { wind: ['관악', 'var(--fam-wind)'], bow: ['찰현', 'var(--fam-bow)'], pluck: ['발현', 'var(--fam-pluck)'], perc: ['타악', 'var(--fam-perc)'], etc: ['그 밖', 'var(--fam-etc)'] };
+function famOf(inst: string) {
+  if (inst === 'perc') return 'perc';
+  if (/daegeum|sogeum|piri|daepiri|taepyeongso|saenghwang|danso|flute|clar/.test(inst)) return 'wind';
+  if (/haegeum|ajaeng|cello|violin|bass/.test(inst)) return 'bow';
+  if (/gayageum|geomungo|yanggeum|harp/.test(inst)) return 'pluck';
+  return 'etc';
+}
 function partsUi() {
   const box = $('tab-parts'); box.innerHTML = '';
   for (const p of state.score!.parts) {
-    const L = state.lines[p.id], d = document.createElement('div'); d.className = 'part';
-    const opts = (L.inst === 'perc' ? [['perc', '타악(장구 소리)']] : INST_OPTIONS).map(([k, n]) => `<option value="${k}"${k === L.inst ? ' selected' : ''}>${esc(n)}</option>`).join('');
-    d.innerHTML = `<div class="nm"><input type="checkbox"${L.on ? ' checked' : ''} title="소리 켜기">${esc(p.name || p.id)}</div>
-      <div class="row"><select title="소리">${opts}</select></div>
-      <div class="row"><span class="hint">크기</span><input type="range" min="0" max="2" step="0.05" value="${L.vol}"></div>`;
-    const [on, sel, vol] = [d.querySelector('input[type=checkbox]') as HTMLInputElement, d.querySelector('select') as HTMLSelectElement, d.querySelector('input[type=range]') as HTMLInputElement];
-    on.onchange = () => { L.on = on.checked; changed(); autosave(); };
-    sel.onchange = () => { L.inst = sel.value; for (const b of banksOf(L.inst)) loadBank(b); changed(); autosave(); };
+    const L = state.lines[p.id], d = document.createElement('div');
+    const paint = () => { const [fn, fc] = FAM[famOf(L.inst)]; d.style.setProperty('--fam', fc); (d.querySelector('.fam') as HTMLElement).textContent = fn; d.classList.toggle('off', !L.on); };
+    d.className = 'pcard';
+    const opts = (L.inst === 'perc' ? [['perc', '타악 (장구 소리)']] : INST_OPTIONS).map(([k, n]) => `<option value="${k}"${k === L.inst ? ' selected' : ''}>${esc(n)}</option>`).join('');
+    d.innerHTML = `<div class="top"><span class="nm" title="${esc(p.name || p.id)}">${esc(p.name || p.id)}</span><span class="fam"></span><input class="switch" type="checkbox"${L.on ? ' checked' : ''} title="소리 켜기·끄기" aria-label="${esc(p.name)} 소리 켜기"></div>
+      <select title="소리" aria-label="${esc(p.name)} 소리">${opts}</select>
+      <div class="vol"><span>크기</span><input type="range" min="0" max="2" step="0.05" value="${L.vol}" aria-label="${esc(p.name)} 크기"><b>${Math.round(L.vol * 100)}%</b></div>`;
+    const [on, sel, vol] = [d.querySelector('.switch') as HTMLInputElement, d.querySelector('select') as HTMLSelectElement, d.querySelector('input[type=range]') as HTMLInputElement];
+    on.onchange = () => { L.on = on.checked; paint(); changed(); autosave(); };
+    sel.onchange = () => { L.inst = sel.value; paint(); for (const b of banksOf(L.inst)) loadBank(b); changed(); autosave(); };
+    vol.oninput = () => { (d.querySelector('.vol b') as HTMLElement).textContent = Math.round(+vol.value * 100) + '%'; };
     vol.onchange = () => { L.vol = +vol.value; changed(); autosave(); };
-    box.appendChild(d);
+    box.appendChild(d); paint();
   }
 }
 function infoUi() {
   const m = state.score!.meta;
-  $('tab-info').innerHTML = `<dl class="info"><dt>제목</dt><dd>${esc(m.title || '(없음)')}</dd>${m.composer ? `<dt>작곡</dt><dd>${esc(m.composer)}</dd>` : ''}${m.arranger ? `<dt>편곡</dt><dd>${esc(m.arranger)}</dd>` : ''}<dt>마디</dt><dd>${state.score!.measures.length}</dd><dt>파일</dt><dd>${esc(state.fileName)}</dd>${state.warnings.length ? `<dt>해석 확인할 곳 ${state.warnings.length}</dt><dd class="warns">${state.warnings.slice(0, 200).map(w => `<div>${esc(w)}</div>`).join('')}</dd>` : ''}</dl>`;
+  $('tab-info').innerHTML = `<dl class="info"><dt>제목</dt><dd>${esc(m.title || '(없음)')}</dd>${m.composer ? `<dt>작곡</dt><dd>${esc(m.composer)}</dd>` : ''}${m.arranger ? `<dt>편곡</dt><dd>${esc(m.arranger)}</dd>` : ''}<dt>마디</dt><dd>${state.score!.measures.length}</dd><dt>파일</dt><dd>${esc(state.fileName)}</dd><dt>파트</dt><dd>${state.score!.parts.length}</dd>${state.warnings.length ? `<div class="wt">해석을 확인할 곳 ${state.warnings.length}</div><div class="warns">${state.warnings.slice(0, 200).map(w => `<div>${esc(w)}</div>`).join('')}</div>` : ''}</dl>`;
 }
 function changed() { if (playing()) { stop(); } }
 
@@ -215,6 +231,7 @@ function showSel() {
 }
 function editUi() {
   const s = state.sel, e = s && state.score ? evOf(state.score, s) : null, p = s ? state.score!.parts[s.pi] : null;
+  $('selChip').classList.toggle('on', !!e);
   $('selInfo').textContent = !e ? '음을 누르면 고칠 수 있습니다' :
     `${p!.name} · ${state.score!.measures[s!.mi].number}마디 · ${e.rest ? '쉼표' : p!.kind === 'perc' ? '타악' : (s!.ni != null ? [e.notes![s!.ni]] : e.notes!).map(pName).join('·')} · ${e.measureRest ? '온마디' : durName(e)}`;
   document.querySelectorAll<HTMLButtonElement>('#editbar [data-ed], #editbar [data-dur]').forEach(b => b.disabled = !e);
@@ -294,31 +311,59 @@ document.addEventListener('keydown', ev => {
 const audio = $<HTMLAudioElement>('audio');
 const playing = () => !audio.paused;
 function playOpts() {
-  return { lines: state.lines, speed: +$<HTMLSelectElement>('speed').value / 100, bpm: +$<HTMLInputElement>('bpm').value || 90,
+  return { lines: state.lines, speed: +$<HTMLInputElement>('speed').value / 100, bpm: +$<HTMLInputElement>('bpm').value || 90,
     unit: $<HTMLSelectElement>('unit').value as any, repeats: $<HTMLInputElement>('repeats').checked };
 }
-['bpm', 'unit', 'speed', 'repeats'].forEach(id => $(id).addEventListener('change', changed));
+['bpm', 'unit', 'repeats'].forEach(id => $(id).addEventListener('change', changed));
+// 속도: − / + (10%씩, 30~200%)
+function setSpeed(v: number) { v = Math.max(30, Math.min(200, v)); $<HTMLInputElement>('speed').value = String(v); $('spdLbl').textContent = v + '%'; changed(); }
+$('spdDn').onclick = () => setSpeed(+$<HTMLInputElement>('speed').value - 10);
+$('spdUp').onclick = () => setSpeed(+$<HTMLInputElement>('speed').value + 10);
 let building = false;
 $('btnPlay').onclick = async () => {
   if (!state.score || building) return;
   if (playing()) { audio.pause(); setPlayBtn(); return; }
   const o = playOpts(), sig = JSON.stringify(o);
   if (!state.rendered || state.rendered.sig !== sig) {
-    building = true; ($('btnPlay') as HTMLButtonElement).disabled = true;
+    building = true; $('btnPlay').classList.add('busy');
     try {
       const r = await renderScore(state.score, { ...o, onProgress: f => status(`소리 만드는 중 ${Math.round(f * 100)}%`) });
       if (state.rendered) URL.revokeObjectURL(state.rendered.url);
       state.rendered = { sig, plan: r.plan, url: URL.createObjectURL(r.blob) };
       audio.src = state.rendered.url; status('');
     } catch (e: any) { console.error(e); status('소리를 만들지 못했습니다: ' + (e && e.message || e)); return; }
-    finally { building = false; ($('btnPlay') as HTMLButtonElement).disabled = false; }
+    finally { building = false; $('btnPlay').classList.remove('busy'); }
   }
   await audio.play(); setPlayBtn(); follow();
 };
 function stop() { audio.pause(); try { audio.currentTime = 0; } catch (e) { } setPlayBtn(); mark(-1); }
 $('btnStop').onclick = stop;
 audio.onended = () => { setPlayBtn(); mark(-1); };
-function setPlayBtn() { $('btnPlay').textContent = playing() ? '❚❚ 멈춤' : '▶ 재생'; ($('btnStop') as HTMLButtonElement).disabled = !state.rendered; }
+function setPlayBtn() {
+  const p = playing();
+  $('playIcon').setAttribute('href', p ? '#i-pause' : '#i-play'); $('btnPlay').setAttribute('aria-label', p ? '멈춤' : '재생');
+  ($('btnStop') as HTMLButtonElement).disabled = !state.rendered; showPos();
+}
+// 위치 표시: 마디·시간, 막대를 눌러 옮기기
+const mmss = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+function showPos() {
+  const d = audio.duration, t = audio.currentTime || 0;
+  $('posBar').textContent = cur >= 0 && state.score ? `${state.score.measures[cur].number}마디` : playing() ? '재생 중' : t > 0 ? '멈춤' : '정지';
+  $('posTime').textContent = d > 0 && isFinite(d) ? `${mmss(t)} / ${mmss(d)}` : '';
+  $('seekFill').style.width = d > 0 && isFinite(d) ? (t / d * 100).toFixed(2) + '%' : '0';
+}
+audio.addEventListener('timeupdate', showPos);
+$('seek').addEventListener('click', ev => {
+  const d = audio.duration; if (!(d > 0) || !isFinite(d)) return;
+  const r = $('seek').getBoundingClientRect(); audio.currentTime = Math.max(0, Math.min(d, (ev.clientX - r.left) / r.width * d)); showPos();
+  if (!playing()) { const bt = state.rendered ? state.rendered.plan.barTimes as { t: number; idx: number }[] : []; let k = -1; for (let i = 0; i < bt.length && bt[i].t <= audio.currentTime; i++) k = i; mark(k >= 0 ? bt[k].idx : -1); showPos(); }
+});
+// Space: 재생·멈춤
+document.addEventListener('keydown', ev => {
+  const t = ev.target as HTMLElement;
+  if (ev.key !== ' ' || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(t.tagName) || !state.score) return;
+  ev.preventDefault(); $('btnPlay').click();
+});
 
 // 따라가기: 지금 소리 나는 마디를 빨갛게, 화면 밖이면 스크롤
 let cur = -1;
@@ -336,7 +381,7 @@ function follow() {
   if (!playing() || !state.rendered) return;
   const bt = state.rendered.plan.barTimes as { t: number; idx: number }[], t = audio.currentTime;
   let k = -1; for (let i = 0; i < bt.length && bt[i].t <= t; i++) k = i;
-  mark(k >= 0 ? bt[k].idx : -1);
+  mark(k >= 0 ? bt[k].idx : -1); showPos();
   requestAnimationFrame(follow);
 }
 
@@ -377,7 +422,7 @@ document.addEventListener('keydown', ev => { if ((ev.ctrlKey || ev.metaKey) && (
   const box = scoreEl.querySelector('.empty'); if (!box) return;
   const d = new Date(last.at), when = `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   const p = document.createElement('p'); p.className = 'resume';
-  p.innerHTML = `<button class="pri" id="btnResume">이어서 열기</button><br><span class="hint">${esc(last.score.meta.title || last.fileName || '악보')} · ${when}에 고친 것</span>`;
+  p.innerHTML = `<button class="btn" id="btnResume" type="button">이어서 열기</button><span class="hint">${esc(last.score.meta.title || last.fileName || '악보')} · ${when}에 고친 것</span>`;
   box.appendChild(p);
   $('btnResume').onclick = () => openScore(last.score, last.fileName, [], { lines: last.lines, view: last.view });
 })();

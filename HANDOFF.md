@@ -1,7 +1,7 @@
 # ScoreWorks Studio 인수인계 메모
 
 새 대화에서 이어 작업할 때 먼저 읽는 문서. 무엇을 왜 고쳤는지는 CHANGELOG.md, 구성·실행은 README.md, 결정 사항은 docs/DESIGN.md.
-(마지막 갱신: 2026-11-24, CHANGELOG 7번까지)
+(마지막 갱신: 2026-11-24, CHANGELOG 10번까지)
 
 ## 1. 작업 규칙 (사용자 요청 — ScoreWorks와 같음)
 
@@ -11,7 +11,7 @@
 - 문법은 ES2020까지(빌드 대상 es2020)
 - **악보 파일은 공개 저장소에 넣지 않는다**(저작권). 시험용 실제 악보는 비공개 저장소 commst/scoreplay_sample(PDF), MusicXML은 ScoreWorks에서 내보내 저장소 밖 폴더에 두고 `SAMPLES_XML=<폴더>`
 - 공통 모듈(shared/scoreworks, public/banks)은 여기서 고치지 않는다 → ScoreWorks에서 고친 뒤 `node tools/sync-shared.mjs <ScoreWorks 폴더>`
-- 화면: A안(가운데 악보, 아래 연주 막대, 왼쪽 탭), 다크 테마 안 씀, 제목 가운데·단추 크기 맞춤·테마 색 단추(ScoreWorks 공통 원칙)
+- 화면: A안(가운데 악보, 아래 연주 막대, 왼쪽 탭), 다크 테마 안 씀, 제목 가운데·단추 크기 맞춤·테마 색 단추(ScoreWorks 공통 원칙). **디자인은 ScoreWorks와 같게**(10번: 색 변수·Pretendard/Outfit·topbar·tabs2·dock·둥근 단추 — src/style.css 맨 위 변수)
 - 커밋 메시지 끝: `Co-Authored-By: Claude …` 줄(세션 안내에 따름). 기본 브랜치 **dev**(올리면 Pages 배포)
 
 ## 2. 작업 환경
